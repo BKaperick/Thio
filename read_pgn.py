@@ -14,6 +14,8 @@ empty = 0
 piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K}
 coord = {chr(i):i-97 for i in range(97,105)}
 
+
+
 class Game:
     def __init__(self, result, moves):
         self.result = result
@@ -27,6 +29,64 @@ class Game:
         self.board = np.empty((8,8))
         self.board[0] = np.array([R,N,B,Q,K,B,N,R])
         self.board[-1] = Bl*np.array([R,N,B,Q,K,B,N,R])
+
+    def checkStraights(self, end):
+        starts = []
+        for i in range(0,end[0],-1):
+            p = self.coord(i, end[1])
+            if  p == team*R:
+                starts.append([i, end[1]])
+            elif p != empty:
+                break
+        for i in range(end[0],8):
+           p = self.coord(i, end[1])
+           if  p == team*R:
+               starts.append([i, end[1]])
+           elif p != empty:
+               break
+        for i in range(0,end[1],-1):
+           p = self.coord(end[0],i)
+           if p == team*R:
+               starts.append([end[0], i])
+           elif p != empty:
+               break
+        for i in range(end[1],8):
+           p = self.coord(end[0],i)
+           if p == team*R:
+               starts.append([end[0], i])
+           elif p != empty:
+               break
+        return starts
+
+    def checkDiags(self, end):
+        starts = []
+        indices = [0,1,2,3]
+        for i in range(1,8):
+            p = [[end[0]+i,end[1]+i],
+                 [end[0]-i,end[1]-i],
+                 [end[0]-i,end[1]+i],
+                 [end[0]+i,end[1]-i]]
+            r = []
+            if len(indices) == 0:
+                break
+            for i in indices:
+                if self.coord(*p) == team*B:
+                    start = p
+                elif self.coord(*p) != empty:
+                    r.append(i)
+            indices = [i for i in indices if i not in r]
+        return starts
+
+    def ambiguous(self, starts, move):
+        if len(starts) > 1 and len(move) == 4:
+                if starts[0][0] == coord[move[1]]:
+                    start = starts[0]
+                else:
+                    start = starts[1]
+            else:
+                start = starts[0]
+        return start
+
 
     def clarifyMove(self, move, team):
         move = move.replace('x','')
@@ -57,85 +117,45 @@ class Game:
         ##########
 
         if p == 'R':
-            #move = move.replace('x','')
-            starts = []
-            for i in range(0,end[0],-1):
-                p = self.coord(i, end[1])
-                if  p == team*R:
-                    starts.append([i, end[1]])
-                elif p != empty:
-                    break
-            for i in range(end[0],8):
-               p = self.coord(i, end[1])
-               if  p == team*R:
-                   starts.append([i, end[1]])
-               elif p != empty:
-                   break
-            for i in range(0,end[1],-1):
-               p = self.coord(end[0],i)
-               if p == team*R:
-                   starts.append([end[0], i])
-               elif p != empty:
-                   break
-            for i in range(end[1],8):
-               p = self.coord(end[0],i)
-               if p == team*R:
-                   starts.append([end[0], i])
-               elif p != empty:
-                   break
-            if len(starts) > 1:
-                if len(move) == 4:
-                    if starts[0][0] == coord[move[1]]:
-                        start = starts[0]
-                    else:
-                        start = starts[1]
-            else:
-                start = starts[0]
+            starts = self.checkStraights(end)
+            
+            start = self.ambiguous(starts, move)
 
             ##########
             # KNIGHT
             ##########
 
-            if p == 'N':
-                #move = move.replace('x','')
-                starts = []
-                for i in range(-2,3,4):
-                    for j in range(-1,2,2):
-                        p1 = self.coord(end[0] + i, end[1] + j)
-                        p2 = self.coord(end[0] + j, end[1] + i)
-                        if p1 == team*N:
-                            starts.append([end[0]+i,end[1]+j])
-                        if p2 == team*N:
-                            starts.append([end[0]+j,end[1]+i])
-                if len(starts) > 1 and len(move) == 4:
-                    if starts[0][0] == coord[move[1]]:
-                        start = starts[0]
-                    else:
-                        start = starts[1]
-                else:
-                    start = starts[0]
+        elif p == 'N':
+            #move = move.replace('x','')
+            starts = []
+            for i in range(-2,3,4):
+                for j in range(-1,2,2):
+                    p1 = self.coord(end[0] + i, end[1] + j)
+                    p2 = self.coord(end[0] + j, end[1] + i)
+                    if p1 == team*N:
+                        starts.append([end[0]+i,end[1]+j])
+                    if p2 == team*N:
+                        starts.append([end[0]+j,end[1]+i])
+            start = self.ambiguous(starts, move)
 
-            ##########
-            # BISHOP
-            ##########
+        ##########
+        # BISHOP
+        ##########
 
-            if p == 'B':
-                #move = move.replace('x','')
-                starts = []
-                indices = [0,1,2,3]
-                for i in range(1,8):
-                    p = [[end[0]+i,end[1]+i],
-                         [end[0]-i,end[1]-i],
-                         [end[0]-i,end[1]+i],
-                         [end[0]+i,end[1]-i]]
-                    r = []
-                    for i in indices:
-                        if self.coord(*p) == team*B:
-                            start = p
-                        elif self.coord(*p) != empty:
-                            r.append(i)
-                    indices = [i for i in indices if i not in r]
-                            
+        elif p == 'B':
+            #move = move.replace('x','')
+            starts = self.checkDiags(end)
+            
+
+        ##########
+        # QUEEN
+        ##########
+
+        elif p == 'Q':
+            starts = self.checkStraights(end)
+            starts.append(self.checkDiags(end))
+            start = self.ambiguous(starts, move)
+                
                     
 
             #ambiguous
