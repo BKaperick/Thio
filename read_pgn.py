@@ -9,9 +9,10 @@ N = 3
 B = 4
 Q = 5
 K = 6
+C = 7
 empty = 0
 
-piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K}
+piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
 coord = {chr(i):i-97 for i in range(97,105)}
 
 
@@ -29,6 +30,15 @@ class Game:
         self.board = np.empty((8,8))
         self.board[0] = np.array([R,N,B,Q,K,B,N,R])
         self.board[-1] = Bl*np.array([R,N,B,Q,K,B,N,R])
+
+    def runGame(self):
+        for i, m in enumerate(self.moves):
+            print self.board
+            team = int(((i % 2) - .5) * 2)
+            start, end = self.clarifyMove(m, team)
+            self.movePiece(start, end, team)
+        print self.board
+            
 
     def checkStraights(self, end):
         starts = []
@@ -83,8 +93,8 @@ class Game:
                     start = starts[0]
                 else:
                     start = starts[1]
-            else:
-                start = starts[0]
+        else:
+            start = starts[0]
         return start
 
 
@@ -121,12 +131,12 @@ class Game:
             
             start = self.ambiguous(starts, move)
 
-            ##########
-            # KNIGHT
-            ##########
+
+        ##########
+        # KNIGHT
+        ##########
 
         elif p == 'N':
-            #move = move.replace('x','')
             starts = []
             for i in range(-2,3,4):
                 for j in range(-1,2,2):
@@ -138,13 +148,14 @@ class Game:
                         starts.append([end[0]+j,end[1]+i])
             start = self.ambiguous(starts, move)
 
+
         ##########
         # BISHOP
         ##########
 
         elif p == 'B':
-            #move = move.replace('x','')
             starts = self.checkDiags(end)
+            start = self.ambiguous(starts, move)
             
 
         ##########
@@ -155,37 +166,60 @@ class Game:
             starts = self.checkStraights(end)
             starts.append(self.checkDiags(end))
             start = self.ambiguous(starts, move)
-                
-                    
 
-            #ambiguous
-            elif len(move) == 4:
-                start[0] = coord[move[0]]
-                for i in range(0,end[1],-1):
-                    p = self.coord(end[0],i)
-                    if p == team*R:
-                        return ([end[0], i], end)
-                    elif p != empty:
+
+        ##########
+        #  KING
+        ##########
+        
+        elif p == 'K':
+            starts = []
+            for i in range(-1,2):
+                for j in range(-1,2):
+                    crd = [end[0] + i, end[1] + j]
+                    if (not (i == 0 and j == 0)) and self.coord(*crd) == team*K:
+                        start = crd
                         break
+                    
+        #Castling
+        elif p == 'O':
+            if len(move) == 5:
+                return ([4,team],[2,team])
+            else:
+                return ([4,team],[6,team])
 
         return(start,end)
 
     def coord(self, c1, c2):
-        pass
+        return self.board[c1, c2]
 
-            
-games = []
-inMoves = False
-moves = ''
-with open(fname) as pgn:
-    for line in pgn.readlines():
-        if line[0] == '1':
-            inMoves = True
-        elif inMoves and line == '\n':
-            moves = moves.split()
-            #print moves
-            games.append(Game(moves[-1], moves[:-1]))
-            inMoves = False
-            moves = ''
-        if inMoves:
-            moves += line.replace('\n',' ')
+    def movePiece(self, start, end, team):
+        self.board[end[0],end[1]] = self.coord(*start)
+        self.board[start[0],start[1]] = empty
+
+        #Handles the rook move in the case of castling
+        if self.coord(*end) == team*K and abs(end[1] - start[1]) > 1:
+            if end[0] == 6:
+                self.board[end[0],5] = team*R
+                self.board[end[0],7] = empty
+            elif end[0] == 2:
+                self.board[end[0],3] = team*R
+                self.board[end[0],0] = empty
+
+def parsePGN(fname):
+    games = []
+    inMoves = False
+    moves = ''
+    with open(fname) as pgn:
+        for line in pgn.readlines():
+            if line[0] == '1':
+                inMoves = True
+            elif inMoves and line == '\n':
+                moves = moves.split()
+                #print moves
+                games.append(Game(moves[-1], moves[:-1]))
+                inMoves = False
+                moves = ''
+            if inMoves:
+                moves += line.replace('\n',' ')
+    return games
