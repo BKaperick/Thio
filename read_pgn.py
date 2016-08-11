@@ -10,6 +10,7 @@ B = 4
 Q = 5
 K = 6
 C = 7
+O = 7
 empty = 0
 
 piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
@@ -31,16 +32,17 @@ class Game:
 
         #Initializes board to chess starting position
         self.board = np.zeros((8,8), dtype=np.int8)
-        self.board[0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
-        self.board[-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
 
     def runGame(self):
         for i, m in enumerate(self.moves):
             print m
             team = int(((i % 2) - .5) * 2)
             startW, endW = self.clarifyMove(m[0], Wh)
+            print 'b move'
             startB, endB = self.clarifyMove(m[1], Bl)
             print startW, endW, startB, endB
             self.movePiece(startW, endW, Wh)
@@ -48,35 +50,36 @@ class Game:
         print self.board
             
 
-    def checkStraights(self, end):
+    def checkStraights(self, end, team, piece=R):
         starts = []
         for i in range(0,end[0],-1):
             p = self.coord(i, end[1])
-            if  p == team*R:
+            if  p == team*piece:
                 starts.append([i, end[1]])
             elif p != empty:
                 break
         for i in range(end[0],8):
            p = self.coord(i, end[1])
-           if  p == team*R:
+           if  p == team*piece:
                starts.append([i, end[1]])
            elif p != empty:
                break
         for i in range(0,end[1],-1):
            p = self.coord(end[0],i)
-           if p == team*R:
+           if p == team*piece:
                starts.append([end[0], i])
            elif p != empty:
                break
         for i in range(end[1],8):
            p = self.coord(end[0],i)
-           if p == team*R:
+           if p == team*piece:
                starts.append([end[0], i])
            elif p != empty:
                break
         return starts
 
-    def checkDiags(self, end):
+
+    def checkDiags(self, end, team, piece=B):
         starts = []
         indices = [0,1,2,3]
         for i in range(1,8):
@@ -88,9 +91,9 @@ class Game:
             if len(indices) == 0:
                 break
             for i in indices:
-                if self.coord(*p) == team*B:
-                    start = p
-                elif self.coord(*p) != empty:
+                if self.coord(*(p[i])) == team*piece:
+                    starts.append(p[i])
+                elif self.coord(*(p[i])) != empty:
                     r.append(i)
             indices = [i for i in indices if i not in r]
         return starts
@@ -103,13 +106,15 @@ class Game:
                     start = starts[1]
         else:
             start = starts[0]
+        print 'amb'
+        print starts, start
         return start
 
 
     def clarifyMove(self, move, team):
-        move = move.replace('x','')
+        move = move.replace('+','')
         start = [None, None]
-        end = [coord[move[-2]], int(move[-1])]
+        end = [coord[move[-2]], int(move[-1])-1]
 
         ##########
         #  PAWN
@@ -119,6 +124,8 @@ class Game:
         if len(move) == 2:
             p = P
             start = [end[0], end[1] - team]
+
+            #If start is incorrect
             if self.coord(*start) != team*P:
                start[1] -= team
             return (start, end)
@@ -134,7 +141,7 @@ class Game:
         #  ROOK
         ##########
 
-        if p == 'R':
+        if p == R:
             starts = self.checkStraights(end)
             
             start = self.ambiguous(starts, move)
@@ -144,7 +151,7 @@ class Game:
         # KNIGHT
         ##########
 
-        elif p == 'N':
+        elif p == N:
             starts = []
             for i in range(-2,3,4):
                 for j in range(-1,2,2):
@@ -154,6 +161,7 @@ class Game:
                         starts.append([end[0]+i,end[1]+j])
                     if p2 == team*N:
                         starts.append([end[0]+j,end[1]+i])
+            print 'starts: ',starts
             start = self.ambiguous(starts, move)
 
 
@@ -161,8 +169,9 @@ class Game:
         # BISHOP
         ##########
 
-        elif p == 'B':
-            starts = self.checkDiags(end)
+        elif p == B:
+            starts = self.checkDiags(end, team)
+            print 'starts: ', starts
             start = self.ambiguous(starts, move)
             
 
@@ -170,9 +179,9 @@ class Game:
         # QUEEN
         ##########
 
-        elif p == 'Q':
-            starts = self.checkStraights(end)
-            starts.append(self.checkDiags(end))
+        elif p == Q:
+            starts = self.checkStraights(end, team, piece=Q)
+            starts += self.checkDiags(end, team, piece=Q)
             start = self.ambiguous(starts, move)
 
 
@@ -180,29 +189,33 @@ class Game:
         #  KING
         ##########
         
-        elif p == 'K':
+        elif p == K:
             starts = []
             for i in range(-1,2):
                 for j in range(-1,2):
                     crd = [end[0] + i, end[1] + j]
                     if (not (i == 0 and j == 0)) and self.coord(*crd) == team*K:
                         start = crd
-                        break
-                    
+                        break 
         #Castling
-        elif p == 'O':
+        elif p == O:
             if len(move) == 5:
                 return ([4,team],[2,team])
             else:
+                print 'else!'
                 return ([4,team],[6,team])
-
+        print p
         return(start,end)
 
     def coord(self, c1, c2):
-        return self.board[c1, c2]
+        try:
+            return self.board[c1, c2]
+        except IndexError:
+            return None
 
     def movePiece(self, start, end, team):
         #Replace destination with moving piece
+        print start
         self.board[end[0],end[1]] = self.coord(*start)
         #Replace starting place with empty
         self.board[start[0],start[1]] = empty
