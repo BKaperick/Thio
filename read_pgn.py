@@ -19,24 +19,32 @@ coord = {chr(i):i-97 for i in range(97,105)}
 
 class Game:
     def __init__(self, result, moves):
-        self.result = result
+        
+        #Adds null move if white was the last to play
         if len(moves) % 2 == 1:
             moves.append(None)
-        try:
-            self.moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves)-5, 2)]
-        except IndexError:
-            print moves
+
+        #Removes move number from each pair of moves
+        self.moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves)-5, 2)]
+
         self.result = result.split('-')[0]
-        self.board = np.empty((8,8))
-        self.board[0] = np.array([R,N,B,Q,K,B,N,R])
-        self.board[-1] = Bl*np.array([R,N,B,Q,K,B,N,R])
+
+        #Initializes board to chess starting position
+        self.board = np.zeros((8,8), dtype=np.int8)
+        self.board[0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
 
     def runGame(self):
         for i, m in enumerate(self.moves):
-            print self.board
+            print m
             team = int(((i % 2) - .5) * 2)
-            start, end = self.clarifyMove(m, team)
-            self.movePiece(start, end, team)
+            startW, endW = self.clarifyMove(m[0], Wh)
+            startB, endB = self.clarifyMove(m[1], Bl)
+            print startW, endW, startB, endB
+            self.movePiece(startW, endW, Wh)
+            self.movePiece(startB, endB, Bl)
         print self.board
             
 
@@ -194,7 +202,9 @@ class Game:
         return self.board[c1, c2]
 
     def movePiece(self, start, end, team):
+        #Replace destination with moving piece
         self.board[end[0],end[1]] = self.coord(*start)
+        #Replace starting place with empty
         self.board[start[0],start[1]] = empty
 
         #Handles the rook move in the case of castling
@@ -206,20 +216,42 @@ class Game:
                 self.board[end[0],3] = team*R
                 self.board[end[0],0] = empty
 
+    def Print(self):
+        remap = {v:'w' + k for k,v in piece.items()}
+        remap.update({-v:'b' + k for k,v in piece.items()})
+        remap[0] = '  '
+        printedBoard = np.zeros((8,8), dtype=object)
+        for i in range(8):
+            for j in range(8):
+                printedBoard[i][j] = remap[self.board[i][j]]
+        print printedBoard
+
 def parsePGN(fname):
     games = []
     inMoves = False
     moves = ''
     with open(fname) as pgn:
         for line in pgn.readlines():
+            
+            #Start of a game
             if line[0] == '1':
                 inMoves = True
+                
+            #End of a game
             elif inMoves and line == '\n':
                 moves = moves.split()
-                #print moves
+
+                #Create game object from moves
                 games.append(Game(moves[-1], moves[:-1]))
                 inMoves = False
                 moves = ''
+                
+            #Middle of a game
             if inMoves:
                 moves += line.replace('\n',' ')
+                
     return games
+
+games = parsePGN(fname)
+g = games[0]
+g.runGame()
