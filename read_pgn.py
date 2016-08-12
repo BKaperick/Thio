@@ -14,7 +14,7 @@ O = 7
 empty = 0
 
 piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
-coord = {chr(i):i-97 for i in range(97,105)}
+coord = {chr(i):i-96 for i in range(97,105)}
 
 
 
@@ -112,10 +112,11 @@ class Game:
 
 
     def clarifyMove(self, move, team):
+        print '\t',move,team
         move = move.replace('+','')
         start = [None, None]
-        end = [coord[move[-2]], int(move[-1])-1]
-
+        if move != 'O-O' and move != 'O-O-O':
+            end = [coord[move[-2]], int(move[-1])]
         ##########
         #  PAWN
         ##########
@@ -208,10 +209,21 @@ class Game:
         return(start,end)
 
     def coord(self, c1, c2):
+        if c1 < 0:
+            c1 += 9
+        if c2 < 0:
+            c2 += 9
         try:
-            return self.board[c1, c2]
+            return self.board[c1-1, c2-1]
         except IndexError:
             return None
+
+    def setCoord(self, c1, c2, val):
+        if c1 < 0:
+            c1 += 9
+        if c2 < 0:
+            c2 += 9
+        self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team):
         #Replace destination with moving piece
@@ -223,8 +235,8 @@ class Game:
         #Handles the rook move in the case of castling
         if self.coord(*end) == team*K and abs(end[1] - start[1]) > 1:
             if end[0] == 6:
-                self.board[end[0],5] = team*R
-                self.board[end[0],7] = empty
+                self.setCoord(end[0],5,team*R)
+                self.setCoord(end[0],7,empty)
             elif end[0] == 2:
                 self.board[end[0],3] = team*R
                 self.board[end[0],0] = empty
