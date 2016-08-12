@@ -52,29 +52,29 @@ class Game:
 
     def checkStraights(self, end, team, piece=R):
         starts = []
-        for i in range(end[0],0,-1):
+        for i in range(end[0]-1,0,-1):
             p = self.coord(i, end[1])
             if  p == team*piece:
                 starts.append([i, end[1]])
-            elif p != empty:
+            if p != empty:
                 break
         for i in range(end[0]+1,9):
            p = self.coord(i, end[1])
            if  p == team*piece:
                starts.append([i, end[1]])
-           elif p != empty:
+           if p != empty:
                break
-        for i in range(end[1],0,-1):
+        for i in range(end[1]-1,0,-1):
            p = self.coord(end[0],i)
            if p == team*piece:
                starts.append([end[0], i])
-           elif p != empty:
+           if p != empty:
                break
         for i in range(end[1]+1,9):
             p = self.coord(end[0],i)
             if p == team*piece:
                 starts.append([end[0], i])
-            elif p != empty:
+            if p != empty:
                 break
         return starts
 
@@ -136,7 +136,7 @@ class Game:
         if move[0] in coord.keys() and 'x' in move:
                return ([coord[move[0]], end[1] - team], end)
 
-
+        move = move.replace('x','')
         p = piece[move[0]]
 
         ##########
@@ -145,7 +145,11 @@ class Game:
 
         if p == R:
             starts = self.checkStraights(end, team)
-            
+            if len(move) == 4:
+                if move[1] in coord.keys():
+                    starts = [m for m in starts if m[0] == coord[move[1]]]
+                else:
+                    starts = [m for m in starts if m[1] == int(move[1])]
             start = self.ambiguous(starts, move)
 
 
