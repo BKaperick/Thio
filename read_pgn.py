@@ -41,15 +41,13 @@ class Game:
 
     def runGame(self, verbose=False):
         for i, m in enumerate(self.moves):
-            if verbose:
-                print '\n',m
             self.movenum += 1
-            team = int(((i % 2) - .5) * 2)
             startW, endW = self.clarifyMove(m[0], Wh)
             self.movePiece(startW, endW, Wh)
             startB, endB = self.clarifyMove(m[1], Bl)
             self.movePiece(startB, endB, Bl)
             if verbose:
+                '\n',m
                 self.Print()
             
 
@@ -101,6 +99,7 @@ class Game:
             indices = [i for i in indices if i not in r]
         return starts
 
+    
     def ambiguous(self, starts, move):
         if len(starts) > 1 and len(move) == 4:
                 if starts[0][0] == coord[move[1]]:
@@ -173,6 +172,8 @@ class Game:
                         starts.append([end[0]+i,end[1]+j])
                     if p2 == team*N:
                         starts.append([end[0]+j,end[1]+i])
+
+            #If additional context is needed to clarify
             if len(move) == 4:
                 if move[1] in coord.keys():
                     starts = [m for m in starts if m[0] == coord[move[1]]]
@@ -220,6 +221,7 @@ class Game:
                 return ([5,team],[7,team])
         return(start,end)
 
+    #Does the coordinate shift from negative, and/or zero-indexed to 1-indexed
     def coord(self, c1, c2):
         if c1 < 0:
             c1 += 9
@@ -230,6 +232,7 @@ class Game:
         except IndexError:
             return None
 
+    #Sets the board position to val
     def setCoord(self, c1, c2, val):
         if c1 < 0:
             c1 += 9
@@ -238,6 +241,7 @@ class Game:
         self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team):
+        #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -1*P:
             self.setCoord(end[0], end[1], team*Q)
         else:
