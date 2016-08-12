@@ -37,17 +37,20 @@ class Game:
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
 
-    def runGame(self):
+        self.movenum = 0
+
+    def runGame(self, verbose=False):
         for i, m in enumerate(self.moves):
-            print m
+            if verbose:
+                print '\n',m
+            self.movenum += 1
             team = int(((i % 2) - .5) * 2)
             startW, endW = self.clarifyMove(m[0], Wh)
-            print 'b move'
-            startB, endB = self.clarifyMove(m[1], Bl)
-            print startW, endW, startB, endB
             self.movePiece(startW, endW, Wh)
+            startB, endB = self.clarifyMove(m[1], Bl)
             self.movePiece(startB, endB, Bl)
-        print self.board
+            if verbose:
+                self.Print()
             
 
     def checkStraights(self, end, team, piece=R):
@@ -99,7 +102,6 @@ class Game:
         return starts
 
     def ambiguous(self, starts, move):
-        print 'choices: ',starts
         if len(starts) > 1 and len(move) == 4:
                 if starts[0][0] == coord[move[1]]:
                     start = starts[0]
@@ -107,16 +109,13 @@ class Game:
                     start = starts[1]
         else:
             start = starts[0]
-        print 'amb'
-        print starts, start
         return start
 
 
     def clarifyMove(self, move, team):
-        print '\t',move,team
         move = move.replace('+','')
         start = [None, None]
-        if move != 'O-O' and move != 'O-O-O':
+        if move != 'O-O' and move != 'O-O-O' and '=' not in move:
             end = [coord[move[-2]], int(move[-1])]
         ##########
         #  PAWN
@@ -133,9 +132,16 @@ class Game:
             return (start, end)
                
         #capture -- does not include en'passant
-        if move[0] in coord.keys() and 'x' in move:
-               return ([coord[move[0]], end[1] - team], end)
+        if move[0] in coord.keys():
+            if '=' in move:
+                if len(move) == 4:
+                    return ([coord[move[0]], int(move[1]) - team], [coord[move[0]], int(move[1])])
+                else:
+                    return ([coord[move[0]], int(move[3]) - team], [coord[move[2]], int(move[3])])
 
+            if 'x' in move:
+               return ([coord[move[0]], end[1] - team], end)
+            
         move = move.replace('x','')
         p = piece[move[0]]
 
@@ -167,7 +173,11 @@ class Game:
                         starts.append([end[0]+i,end[1]+j])
                     if p2 == team*N:
                         starts.append([end[0]+j,end[1]+i])
-            print 'starts: ',starts
+            if len(move) == 4:
+                if move[1] in coord.keys():
+                    starts = [m for m in starts if m[0] == coord[move[1]]]
+                else:
+                    starts = [m for m in starts if m[1] == int(move[1])]
             start = self.ambiguous(starts, move)
 
 
@@ -177,7 +187,6 @@ class Game:
 
         elif p == B:
             starts = self.checkDiags(end, team)
-            print 'starts: ', starts
             start = self.ambiguous(starts, move)
             
 
@@ -208,9 +217,7 @@ class Game:
             if len(move) == 5:
                 return ([5,team],[3,team])
             else:
-                print 'else!'
                 return ([5,team],[7,team])
-        print p
         return(start,end)
 
     def coord(self, c1, c2):
@@ -231,16 +238,17 @@ class Game:
         self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team):
-        #Replace destination with moving piece
-        self.setCoord(end[0],end[1],self.coord(*start))
+        if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -1*P:
+            self.setCoord(end[0], end[1], team*Q)
+        else:
+            #Replace destination with moving piece
+            self.setCoord(end[0],end[1],self.coord(*start))
+        
         #Replace starting place with empty
         self.setCoord(start[0],start[1],empty)
 
-        print 'MOVE: ',end
-
         #Handles the rook move in the case of castling
         if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
-            print '\t\t\tCASTLE'
             if end[0] == 7:
                 self.setCoord(6, team, team*R)
                 self.setCoord(8, team, empty)
@@ -287,5 +295,12 @@ def parsePGN(fname):
     return games
 
 games = parsePGN(fname)
-g = games[0]
-g.runGame()
+#games[81].runGame(True)
+tally = 0
+for i,g in enumerate(games):
+    try:
+        g.runGame()
+        tally += 1
+    except IndexError:
+        pass
+print tally / float(len(games))
