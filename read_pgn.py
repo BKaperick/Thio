@@ -52,30 +52,30 @@ class Game:
 
     def checkStraights(self, end, team, piece=R):
         starts = []
-        for i in range(0,end[0],-1):
+        for i in range(end[0],0,-1):
             p = self.coord(i, end[1])
             if  p == team*piece:
                 starts.append([i, end[1]])
             elif p != empty:
                 break
-        for i in range(end[0],8):
+        for i in range(end[0]+1,9):
            p = self.coord(i, end[1])
            if  p == team*piece:
                starts.append([i, end[1]])
            elif p != empty:
                break
-        for i in range(0,end[1],-1):
+        for i in range(end[1],0,-1):
            p = self.coord(end[0],i)
            if p == team*piece:
                starts.append([end[0], i])
            elif p != empty:
                break
-        for i in range(end[1],8):
-           p = self.coord(end[0],i)
-           if p == team*piece:
-               starts.append([end[0], i])
-           elif p != empty:
-               break
+        for i in range(end[1]+1,9):
+            p = self.coord(end[0],i)
+            if p == team*piece:
+                starts.append([end[0], i])
+            elif p != empty:
+                break
         return starts
 
 
@@ -99,6 +99,7 @@ class Game:
         return starts
 
     def ambiguous(self, starts, move):
+        print 'choices: ',starts
         if len(starts) > 1 and len(move) == 4:
                 if starts[0][0] == coord[move[1]]:
                     start = starts[0]
@@ -143,7 +144,7 @@ class Game:
         ##########
 
         if p == R:
-            starts = self.checkStraights(end)
+            starts = self.checkStraights(end, team)
             
             start = self.ambiguous(starts, move)
 
@@ -201,10 +202,10 @@ class Game:
         #Castling
         elif p == O:
             if len(move) == 5:
-                return ([4,team],[2,team])
+                return ([5,team],[3,team])
             else:
                 print 'else!'
-                return ([4,team],[6,team])
+                return ([5,team],[7,team])
         print p
         return(start,end)
 
@@ -227,19 +228,21 @@ class Game:
 
     def movePiece(self, start, end, team):
         #Replace destination with moving piece
-        print start
-        self.board[end[0],end[1]] = self.coord(*start)
+        self.setCoord(end[0],end[1],self.coord(*start))
         #Replace starting place with empty
-        self.board[start[0],start[1]] = empty
+        self.setCoord(start[0],start[1],empty)
+
+        print 'MOVE: ',end
 
         #Handles the rook move in the case of castling
-        if self.coord(*end) == team*K and abs(end[1] - start[1]) > 1:
-            if end[0] == 6:
-                self.setCoord(end[0],5,team*R)
-                self.setCoord(end[0],7,empty)
-            elif end[0] == 2:
-                self.board[end[0],3] = team*R
-                self.board[end[0],0] = empty
+        if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
+            print '\t\t\tCASTLE'
+            if end[0] == 7:
+                self.setCoord(6, team, team*R)
+                self.setCoord(8, team, empty)
+            elif end[0] == 3:
+                self.setCoord(4, team, team*R)
+                self.setCoord(1, team, empty)
 
     def Print(self):
         remap = {v:'w' + k for k,v in piece.items()}
@@ -248,8 +251,10 @@ class Game:
         printedBoard = np.zeros((8,8), dtype=object)
         for i in range(8):
             for j in range(8):
-                printedBoard[i][j] = remap[self.board[i][j]]
-        print printedBoard
+                printedBoard[j][i] = remap[self.board[i][j]]
+        print '     A    B    C    D    E    F    G    H'
+        for i,r in enumerate(printedBoard):
+            print i+1,r
 
 def parsePGN(fname):
     games = []
