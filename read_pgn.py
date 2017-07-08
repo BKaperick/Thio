@@ -20,6 +20,15 @@ coord = {chr(i):i-96 for i in range(97,105)}
 
 class Game:
     def __init__(self, result, moves):
+        '''
+        result - is a string '1' or '0' or '1/2' indicating the game result
+        moves - a list of moves alternating between white and black moves given
+        in standard chess notation.
+
+        Also builds the board to the initial setup ready for simulation.
+        self.board[i,j] is the ith rank (row) and jth file (column), each
+        indexed from 0-7
+        '''
         
         #Adds null move if white was the last to play
         if len(moves) % 2 == 1:
@@ -41,7 +50,8 @@ class Game:
 
     def runGame(self, verbose=False):
         '''
-        Iterates over the moves pulled from PGN file and plays the game described
+        Iterates over the moves pulled from PGN file and plays the game described, 
+        printing along the way.
         '''
 
         # m is a 2-tuple of form (white's move, black's move)
@@ -59,13 +69,22 @@ class Game:
             
 
     def checkStraights(self, end, team, piece=R):
+        '''
+        Given an end coordinate and a team/piece, returns a list of all pieces
+        of this team and this piece type which could have reached end with a 
+        straight movement.
+        '''
         starts = []
+
+        # Row to left of end coordinate
         for i in range(end[0]-1,0,-1):
             p = self.coord(i, end[1])
             if  p == team*piece:
                 starts.append([i, end[1]])
             if p != empty:
                 break
+        
+        # Row to right of end coordinate
         for i in range(end[0]+1,9):
            p = self.coord(i, end[1])
            if  p == team*piece:
@@ -88,6 +107,11 @@ class Game:
 
 
     def checkDiags(self, end, team, piece=B):
+        '''
+        Given an end coordinate and a team/piece, returns a list of all pieces
+        of this team and this piece type which could have reached end with a 
+        diagonal movement.
+        '''
         starts = []
         indices = [0,1,2,3]
         for i in range(1,8):
@@ -108,13 +132,25 @@ class Game:
 
     
     def ambiguous(self, starts, move):
+        '''
+        starts is a list returned from checkStraights() or checkDiags() 
+        which contains a list of coordinates of pieces which could make 
+        the inputted move.
+        '''
+
+        # If there are multiple options and move supposes there should be no
+        # ambiguity by only listing two coordinates (4 characters)
         if len(starts) > 1 and len(move) == 4:
                 if starts[0][0] == coord[move[1]]:
                     start = starts[0]
                 else:
                     start = starts[1]
+        
+        # Simply return the only element from starts if len(starts) == 1, 
+        # Or return the first element from starts (sloppy handling).
         else:
             start = starts[0]
+
         return start
 
 
@@ -261,6 +297,10 @@ class Game:
         self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team):
+        '''
+        Given a start and end string in standard chess notation and a team 
+        distinction, the board gets updated accordingly.
+        '''
         #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -1*P:
             self.setCoord(end[0], end[1], team*Q)
@@ -281,6 +321,7 @@ class Game:
                 self.setCoord(1, team, empty)
 
     def Print(self):
+        ''' Print board in a human-readable format. '''
         remap = {v:'w' + k for k,v in piece.items()}
         remap.update({-v:'b' + k for k,v in piece.items()})
         remap[0] = '  '
@@ -293,6 +334,10 @@ class Game:
             print(i+1,r)
 
 def parsePGN(fname):
+    '''
+    Take in a string file location fname and return a list of games.
+    Games list is comprised of Game objects.
+    '''
     games = []
     inMoves = False
     moves = ''
@@ -321,12 +366,12 @@ def parsePGN(fname):
 if __name__ == "__main__":
 
     games = parsePGN(fname)
-    #games[81].runGame(True)
+    games[81].runGame(True)
     tally = 0
-    for g in games:
-        try:
-            g.runGame()
-            tally += 1
-        except IndexError:
-            pass
-    print(tally / float(len(games)))
+#    for g in games:
+#        try:
+#            g.runGame()
+#            tally += 1
+#        except IndexError:
+#            pass
+#    print(tally / float(len(games)))

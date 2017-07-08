@@ -1,0 +1,45 @@
+Game
+    __init__(self, result, moves)
+        result - is a string '1' or '0' or '1/2' indicating the game result
+        moves - a list of moves alternating between white and black moves given
+        in standard chess notation.
+
+        Also builds the board to the initial setup ready for simulation.
+        self.board[i,j] is the ith rank (row) and jth file (column), each
+        indexed from 0-7
+
+    runGame(self, verbose=False)
+        Iterates over the moves pulled from PGN file and plays the game described, 
+        printing along the way.
+
+    checkStraights(self, end, team, piece=R)
+        Given an end coordinate and a team/piece, returns a list of all pieces
+        of this team and this piece type which could have reached end with a 
+        straight movement.
+
+    checkDiags(self, end, team, piece=B)
+        Given an end coordinate and a team/piece, returns a list of all pieces
+        of this team and this piece type which could have reached end with a 
+        diagonal movement.
+
+    ambiguous(self, starts, move)
+        starts is a list returned from checkStraights() or checkDiags() 
+        which contains a list of coordinates of pieces which could make 
+        the inputted move.
+
+    clarifyMove(self, move, team)
+        move - string containing standard chess notation for the move
+        team - corresponds to one of the two team codes
+
+    coord(self, c1, c2)
+    setCoord(self, c1, c2, val)
+    movePiece(self, start, end, team)
+        Given a start and end string in standard chess notation and a team 
+        distinction, the board gets updated accordingly.
+
+    Print(self)
+        Print board in a human-readable format.
+parsePGN(fname)
+    Take in a string file location fname and return a list of games.
+    Games list is comprised of Game objects.
+
