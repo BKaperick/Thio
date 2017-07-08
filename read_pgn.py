@@ -40,8 +40,15 @@ class Game:
         self.movenum = 0
 
     def runGame(self, verbose=False):
+        '''
+        Iterates over the moves pulled from PGN file and plays the game described
+        '''
+
+        # m is a 2-tuple of form (white's move, black's move)
         for i, m in enumerate(self.moves):
             self.movenum += 1
+
+            # Pass in white's move and white's team code to extract starting and ending positions?
             startW, endW = self.clarifyMove(m[0], Wh)
             self.movePiece(startW, endW, Wh)
             startB, endB = self.clarifyMove(m[1], Bl)
@@ -112,17 +119,28 @@ class Game:
 
 
     def clarifyMove(self, move, team):
+        '''
+        move - string containing standard chess notation for the move
+        team - corresponds to one of the two team codes
+        '''
+        # Checks do not affect anything
         move = move.replace('+','')
+
         start = [None, None]
+        
+        # If not castling or promoting a pawn, the move ends on the last two 
+        # coordinates
         if move != 'O-O' and move != 'O-O-O' and '=' not in move:
             end = [coord[move[-2]], int(move[-1])]
+
         ##########
         #  PAWN
         ##########
 
-        #move
+        # If the move consists of two coordinates, it's a pawn
         if len(move) == 2:
             p = P
+            
             start = [end[0], end[1] - team]
 
             #If start is incorrect
@@ -204,12 +222,14 @@ class Game:
         ##########
         #  KING
         ##########
-        
-        elif p == K:
-            starts = []
-            for i in range(-1,2):
+                
+        elif p == K: # Piece is equal to "king"
+            starts = [] # init starts
+            for i in range(-1,2): 
                 for j in range(-1,2):
-                    crd = [end[0] + i, end[1] + j]
+                    crd = [end[0] + i, end[1] + j] # Relative coordinates (-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1),(1,-1),(1,0),(1,1)
+
+                    # If we exclude (0,0) and 
                     if (not (i == 0 and j == 0)) and self.coord(*crd) == team*K:
                         start = crd
                         break 
@@ -268,9 +288,9 @@ class Game:
         for i in range(8):
             for j in range(8):
                 printedBoard[j][i] = remap[self.board[i][j]]
-        print '     A    B    C    D    E    F    G    H'
+        print('     A    B    C    D    E    F    G    H')
         for i,r in enumerate(printedBoard):
-            print i+1,r
+            print(i+1,r)
 
 def parsePGN(fname):
     games = []
@@ -298,13 +318,15 @@ def parsePGN(fname):
                 
     return games
 
-games = parsePGN(fname)
-#games[81].runGame(True)
-tally = 0
-for i,g in enumerate(games):
-    try:
-        g.runGame()
-        tally += 1
-    except IndexError:
-        pass
-print tally / float(len(games))
+if __name__ == "__main__":
+
+    games = parsePGN(fname)
+    #games[81].runGame(True)
+    tally = 0
+    for g in games:
+        try:
+            g.runGame()
+            tally += 1
+        except IndexError:
+            pass
+    print(tally / float(len(games)))
