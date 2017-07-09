@@ -13,9 +13,9 @@ Game
         printing along the way.
 
     checkStraights(self, end, team, piece=R)
-        Given an end coordinate and a team/piece, returns a list of all pieces
-        of this team and this piece type which could have reached end with a 
-        straight movement.
+        Given an end coordinate on range [1,8] and a team/piece, returns a list 
+        of all pieces of this team and this piece type which could have reached 
+        end with a straight movement.
 
     checkDiags(self, end, team, piece=B)
         Given an end coordinate and a team/piece, returns a list of all pieces

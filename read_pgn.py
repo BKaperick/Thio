@@ -14,8 +14,9 @@ O = 7
 empty = 0
 
 piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
-coord = {chr(i):i-96 for i in range(97,105)}
 
+# a:1, ..., h:8
+coord = {chr(i):i-96 for i in range(97,105)}
 
 
 class Game:
@@ -53,16 +54,23 @@ class Game:
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
         '''
-
-        # m is a 2-tuple of form (white's move, black's move)
+        # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         for i, m in enumerate(self.moves):
+            if verbose: print(i,m)
             self.movenum += 1
 
-            # Pass in white's move and white's team code to extract starting and ending positions?
+            # Pass in white's move in standard chess notation and white's team 
+            # code to extract starting and ending positions.
             startW, endW = self.clarifyMove(m[0], Wh)
+            # Update the board
             self.movePiece(startW, endW, Wh)
+            
+            # Pass in black's move in standard chess notation and black's team 
+            # code to extract starting and ending positions.
             startB, endB = self.clarifyMove(m[1], Bl)
+            # Update the board
             self.movePiece(startB, endB, Bl)
+
             if verbose:
                 '\n',m
                 self.Print()
@@ -70,9 +78,9 @@ class Game:
 
     def checkStraights(self, end, team, piece=R):
         '''
-        Given an end coordinate and a team/piece, returns a list of all pieces
-        of this team and this piece type which could have reached end with a 
-        straight movement.
+        Given an end coordinate on range [1,8] and a team/piece, returns a list 
+        of all pieces of this team and this piece type which could have reached 
+        end with a straight movement.
         '''
         starts = []
 
@@ -86,17 +94,17 @@ class Game:
         
         # Row to right of end coordinate
         for i in range(end[0]+1,9):
-           p = self.coord(i, end[1])
-           if  p == team*piece:
-               starts.append([i, end[1]])
-           if p != empty:
-               break
+            p = self.coord(i, end[1])
+            if  p == team*piece:
+                starts.append([i, end[1]])
+            if p != empty:
+                break
         for i in range(end[1]-1,0,-1):
-           p = self.coord(end[0],i)
-           if p == team*piece:
-               starts.append([end[0], i])
-           if p != empty:
-               break
+            p = self.coord(end[0],i)
+            if p == team*piece:
+                starts.append([end[0], i])
+            if p != empty:
+                break
         for i in range(end[1]+1,9):
             p = self.coord(end[0],i)
             if p == team*piece:
@@ -119,12 +127,19 @@ class Game:
                  [end[0]-i,end[1]-i],
                  [end[0]-i,end[1]+i],
                  [end[0]+i,end[1]-i]]
+            
+            # Remove diagonal check if a wall is hit
+            indices = [i for i in indices if all([1 <= y <= 8 for y in p[i]])] 
+
             r = []
+
+            # If all avenues have been checked
             if len(indices) == 0:
                 break
             for i in indices:
                 if self.coord(*(p[i])) == team*piece:
                     starts.append(p[i])
+                    r.append(i) 
                 elif self.coord(*(p[i])) != empty:
                     r.append(i)
             indices = [i for i in indices if i not in r]
@@ -167,6 +182,8 @@ class Game:
         # If not castling or promoting a pawn, the move ends on the last two 
         # coordinates
         if move != 'O-O' and move != 'O-O-O' and '=' not in move:
+            
+            # Coordinate in range 1 <= end[i] <= 8
             end = [coord[move[-2]], int(move[-1])]
 
         ##########
@@ -194,8 +211,10 @@ class Game:
 
             if 'x' in move:
                return ([coord[move[0]], end[1] - team], end)
-            
+        
+        # Do not need to know if a piece is being taken
         move = move.replace('x','')
+        
         p = piece[move[0]]
 
         ##########
@@ -271,14 +290,18 @@ class Game:
                         break 
         #Castling
         elif p == O:
+            # Queen-side castling
             if len(move) == 5:
                 return ([5,team],[3,team])
+            # King-side castling
             else:
                 return ([5,team],[7,team])
         return(start,end)
 
     #Does the coordinate shift from negative, and/or zero-indexed to 1-indexed
+    # c1 and c2 are on the range [1,8]
     def coord(self, c1, c2):
+        if c1==0 or c2==0: return None
         if c1 < 0:
             c1 += 9
         if c2 < 0:
@@ -286,10 +309,12 @@ class Game:
         try:
             return self.board[c1-1, c2-1]
         except IndexError:
+            #print("failed",c1,c2)
             return None
 
     #Sets the board position to val
     def setCoord(self, c1, c2, val):
+        if c1==0 or c2==0: print("bad")
         if c1 < 0:
             c1 += 9
         if c2 < 0:
@@ -306,10 +331,10 @@ class Game:
             self.setCoord(end[0], end[1], team*Q)
         else:
             #Replace destination with moving piece
-            self.setCoord(end[0],end[1],self.coord(*start))
+            self.setCoord(end[0], end[1], self.coord(*start))
         
         #Replace starting place with empty
-        self.setCoord(start[0],start[1],empty)
+        self.setCoord(start[0], start[1],empty)
 
         #Handles the rook move in the case of castling
         if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
@@ -332,6 +357,7 @@ class Game:
         print('     A    B    C    D    E    F    G    H')
         for i,r in enumerate(printedBoard):
             print(i+1,r)
+        print('\n')
 
 def parsePGN(fname):
     '''
@@ -366,12 +392,14 @@ def parsePGN(fname):
 if __name__ == "__main__":
 
     games = parsePGN(fname)
-    games[81].runGame(True)
+    #games[0].runGame(True)
     tally = 0
-#    for g in games:
-#        try:
-#            g.runGame()
-#            tally += 1
-#        except IndexError:
-#            pass
-#    print(tally / float(len(games)))
+    for i,g in enumerate(games):
+        if i%100==0: print(i)
+        #g.runGame()
+        try:
+            g.runGame()
+            tally += 1
+        except IndexError:
+            pass
+    print(tally / float(len(games)))
