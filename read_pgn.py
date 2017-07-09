@@ -298,14 +298,19 @@ class Game:
                 return ([5,team],[7,team])
         return(start,end)
 
-    #Does the coordinate shift from negative, and/or zero-indexed to 1-indexed
-    # c1 and c2 are on the range [1,8]
     def coord(self, c1, c2):
+        '''
+        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+        the specified board position.  Negative indices are treated such that 
+        -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
+        handling castling and promotions symmetrically.
+        
+        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+        position which is out of bounds, so None is returned.
+        '''
         if c1==0 or c2==0: return None
-        if c1 < 0:
-            c1 += 9
-        if c2 < 0:
-            c2 += 9
+        if c1 < 0: c1 += 9
+        if c2 < 0: c2 += 9
         try:
             return self.board[c1-1, c2-1]
         except IndexError:
@@ -314,11 +319,18 @@ class Game:
 
     #Sets the board position to val
     def setCoord(self, c1, c2, val):
-        if c1==0 or c2==0: print("bad")
-        if c1 < 0:
-            c1 += 9
-        if c2 < 0:
-            c2 += 9
+        '''
+        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+        the specified board position and updates self.board with val at this 
+        position.  Negative indices are treated such that -1 maps to 8, -2 maps
+        to 7, etc.  This functionality is only used when
+        handling castling and promotions symmetrically.
+        
+        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+        position which is out of bounds, so None is returned.
+        '''
+        if c1 < 0: c1 += 9
+        if c2 < 0: c2 += 9
         self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team):

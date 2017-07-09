@@ -32,7 +32,24 @@ Game
         team - corresponds to one of the two team codes
 
     coord(self, c1, c2)
+        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+        the specified board position.  Negative indices are treated such that 
+        -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
+        handling castling and promotions symmetrically.
+        
+        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+        position which is out of bounds, so None is returned.
+
     setCoord(self, c1, c2, val)
+        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+        the specified board position and updates self.board with val at this 
+        position.  Negative indices are treated such that -1 maps to 8, -2 maps
+        to 7, etc.  This functionality is only used when
+        handling castling and promotions symmetrically.
+        
+        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+        position which is out of bounds, so None is returned.
+
     movePiece(self, start, end, team)
         Given a start and end string in standard chess notation and a team 
         distinction, the board gets updated accordingly.
