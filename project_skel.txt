@@ -1,3 +1,18 @@
+
+./chess.py----------------------------------------------------------------------
+is_valid_move(start, end, team)
+    Takes in two arrays shaped (64,) and determines if a valid chess move
+    can map start to end.
+
+is_castling(start, end)
+is_enpassant(start, end)
+
+./game_wrapper.py---------------------------------------------------------------
+iter_2d(arr)
+build_data_with_labels(game)
+vectorize(board)
+
+./read_pgn.py-------------------------------------------------------------------
 Game
     __init__(self, result, moves)
         result - is a string '1' or '0' or '1/2' indicating the game result

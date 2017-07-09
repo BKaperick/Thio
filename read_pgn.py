@@ -49,11 +49,12 @@ class Game:
 
         self.movenum = 0
 
-    def runGame(self, verbose=False):
+    def runGame(self, savestates=True, verbose=False):
         '''
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
         '''
+        states = []
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         for i, m in enumerate(self.moves):
             if verbose: print(i,m)
@@ -70,10 +71,16 @@ class Game:
             startB, endB = self.clarifyMove(m[1], Bl)
             # Update the board
             self.movePiece(startB, endB, Bl)
-
+            
+            if savestates:
+                states.append(self.board.copy())
+            
             if verbose:
-                '\n',m
+                print("\n", m)
                 self.Print()
+        
+        if savestates:
+            return states
             
 
     def checkStraights(self, end, team, piece=R):
@@ -173,6 +180,8 @@ class Game:
         '''
         move - string containing standard chess notation for the move
         team - corresponds to one of the two team codes
+
+        Returns a 2-tuple of the moving pieces
         '''
         # Checks do not affect anything
         move = move.replace('+','')
@@ -296,6 +305,7 @@ class Game:
             # King-side castling
             else:
                 return ([5,team],[7,team])
+
         return(start,end)
 
     def coord(self, c1, c2):
