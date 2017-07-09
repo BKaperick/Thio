@@ -1,3 +1,7 @@
+'''
+TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
+'''
+
 import numpy as np
 
 fname = '../data/Adams.pgn'
@@ -53,6 +57,9 @@ class Game:
         '''
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
+
+        If savestates is True, the board is deep-copied after each board change.
+        If verbose is True, the board is printed after each black move.
         '''
         states = []
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
@@ -65,6 +72,9 @@ class Game:
             startW, endW = self.clarifyMove(m[0], Wh)
             # Update the board
             self.movePiece(startW, endW, Wh)
+            
+            if savestates:
+                states.append(self.board.copy())
             
             # Pass in black's move in standard chess notation and black's team 
             # code to extract starting and ending positions.
@@ -192,7 +202,7 @@ class Game:
         # coordinates
         if move != 'O-O' and move != 'O-O-O' and '=' not in move:
             
-            # Coordinate in range 1 <= end[i] <= 8
+            # Note this coordinate is in range 1 <= end[i] <= 8
             end = [coord[move[-2]], int(move[-1])]
 
         ##########

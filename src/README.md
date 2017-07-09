@@ -1,12 +1,26 @@
-## In-Progress API
 
 ./chess.py----------------------------------------------------------------------
 is_valid_move(start, end, team)
-    Takes in two arrays shaped (64,) and determines if a valid chess move
-    can map start to end.
+    Takes in two arrays shaped (64,) and determines if exactly one valid chess 
+    move by the specified team can map start to end.
+    TODO: Decide whether (64,) or (8,8) shape is preferable.  Consider 
+    efficiency of reshape().
+    TODO: Finish implementing subfunctions.
 
-is_castling(start, end)
-is_enpassant(start, end)
+is_castling(start, end, team, moves)
+    Checks whether team is castling legally.  Does not make any claims about 
+    whether other moves are also taking place.
+    TODO: Verify indexing is correct.
+
+is_enpassant(start, end, team, moves)
+    Determines whether start can be transformed into end by an en'passant move
+    by team.
+    TODO: Implement.
+
+is_in_check(board, team)
+    Given the board state, determines whether team's king is threatened.
+    TODO: Implement.
+
 
 ./game_wrapper.py---------------------------------------------------------------
 iter_2d(arr)
@@ -14,6 +28,8 @@ build_data_with_labels(game)
 vectorize(board)
 
 ./read_pgn.py-------------------------------------------------------------------
+TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
+
 Game
     __init__(self, result, moves)
         result - is a string '1' or '0' or '1/2' indicating the game result
@@ -27,6 +43,9 @@ Game
     runGame(self, savestates=True, verbose=False)
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
+
+        If savestates is True, the board is deep-copied after each board change.
+        If verbose is True, the board is printed after each black move.
 
     checkStraights(self, end, team, piece=R)
         Given an end coordinate on range [1,8] and a team/piece, returns a list 
