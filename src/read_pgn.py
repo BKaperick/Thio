@@ -1,6 +1,6 @@
 import numpy as np
 
-fname = 'Adams.pgn'
+fname = '../data/Adams.pgn'
 Wh = 1
 Bl = -1
 P = 1
