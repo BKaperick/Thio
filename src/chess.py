@@ -86,10 +86,10 @@ def is_castling(start, end, team, moves):
 
         # This boolean verifies the team is not in check and the king and rook 
         # are in the correct places before and after the move
-        castling = not is_in_check(start, team) and
-        (files['kf'],backrank[team]) in moves['movefrom'] 
-        and (files['rf'],backrank[team]) in moves['movefrom'] and
-            (files['kt'],backrank[team]) in moves['movesto'] and 
+        castling = not is_in_check(start, team) and 
+            (files['kf'],backrank[team]) in moves['movefrom'] and
+            (files['rf'],backrank[team]) in moves['movefrom'] and
+            (files['kt'],backrank[team]) in moves['movesto'] and
             (files['rt'],backrank[team]) in moves['movesto'] and
             start[files['rf'],backrank[team]] == team*R and 
             start[files['kf'],backrank[team]] == team*K and 
@@ -176,9 +176,12 @@ def enpassant_moves(board, team):
     Note: This function does not check whether the castling violates check.
     '''
     moves = []
-    second_rank = backrank[team] + team
-    pawns = [i for i,x in enumerate(board[second_rank,:]) if x == team*P]
-    for pawn in pawns:
+    second_rank = backrank[-team] - team
+    enemy_pawn_locs = [i for i,x in enumerate(board[second_rank,:]) if x == -team*P]
+    for x in enemy_pawn_locs:
+        if board[second_rank+team,x] == board[second_rank+2*team,x] == empty:
+            
+
 
 
 def move_on_board(move_tuple):
@@ -202,7 +205,6 @@ def pawn_move(board, row, col, team):
     for cand in candidates:
         moves.append([P, row+team,col+1])
         moves.append([P, row+team,col-1])
-
 
     # Handle promotions
     elif row == backrank[-team] - team:

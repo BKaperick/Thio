@@ -1,5 +1,6 @@
 '''
 TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
+TODO: Handle en'passant by making pawns "fresh pawns" for exactly one move after a double move.
 '''
 
 import numpy as np
@@ -8,6 +9,9 @@ fname = '../data/Adams.pgn'
 Wh = 1
 Bl = -1
 P = 1
+
+#fP is a "fresh pawn" (one that has just moved two spaces and can be en'passanted next turn.
+fP = 8
 R = 2
 N = 3
 B = 4
@@ -424,11 +428,10 @@ def parsePGN(fname):
 if __name__ == "__main__":
 
     games = parsePGN(fname)
-    #games[0].runGame(True)
+    #games[14].runGame(False, True)
     tally = 0
     for i,g in enumerate(games):
         if i%100==0: print(i)
-        #g.runGame()
         try:
             g.runGame()
             tally += 1
