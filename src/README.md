@@ -19,7 +19,45 @@ is_enpassant(start, end, team, moves)
 
 is_in_check(board, team)
     Given the board state, determines whether team's king is threatened.
-    TODO: Implement.
+
+possible_moves(board, team)
+    Given a board state and a team specifier, returns a list of 3-tuples
+    describing the possible moves that can be made.
+    
+    Note: this function does not remove moves which reveal checks illegally,
+    or moves that fail to respond to an active check threat.
+
+    TODO: en'passant moves.
+
+castling_moves(board, team)
+    Returns 3-tuples flagged 'castle' in the first position for each possible
+    castling move in this board state by this team. 
+
+    Note: This function does not check whether the castling violates check.
+
+enpassant_moves(board, team)
+    Returns 3-tuples flagged 'pass left' or 'pass right' in the first position
+    for each possible en'passant move in this board state by this team. 
+
+    Note: This function does not check whether the castling violates check.
+
+move_on_board(move_tuple)
+pawn_move(board, row, col, team)
+    Returns moves in the form (piece_at_and, end_row, end_col).
+    piece_at_end can be different in the case of promotion.
+
+knight_move(board, row, col, team)
+king_move(board, row, col, team)
+    Note, this does not include castling nor does it check for check violations.
+
+generate_straight(board, start_row, start_col, direction)
+    Generator for the successive row,column and piece along a straight line
+    indicated by the direction 2-tuple.
+
+normal_move(board, row, col, team, sign_pairs)
+    Bishops, Rooks and Queens all move very similarly, so we use the same function
+    for each of their moves, with only sign_pairs changing to allow either 
+    straight moves, diagonal moves, or both.
 
 
 ./game_wrapper.py---------------------------------------------------------------
