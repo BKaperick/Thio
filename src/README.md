@@ -5,7 +5,6 @@ is_valid_move(start, end, team)
     move by the specified team can map start to end.
     TODO: Decide whether (64,) or (8,8) shape is preferable.  Consider 
     efficiency of reshape().
-    TODO: Finish implementing subfunctions.
 
 is_castling(start, end, team, moves)
     Checks whether team is castling legally.  Does not make any claims about 
@@ -13,9 +12,8 @@ is_castling(start, end, team, moves)
     TODO: Verify indexing is correct.
 
 is_enpassant(start, end, team, moves)
-    Determines whether start can be transformed into end by an en'passant move
-    by team.
-    TODO: Implement.
+    Determines whether start can be transformed into end by exactly one 
+    en'passant move by the specified team.
 
 is_in_check(board, team)
     Given the board state, determines whether team's king is threatened.
@@ -26,8 +24,6 @@ possible_moves(board, team)
     
     Note: this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
-
-    TODO: en'passant moves.
 
 castling_moves(board, team)
     Returns 3-tuples flagged 'castle' in the first position for each possible
@@ -41,6 +37,7 @@ enpassant_moves(board, team)
 
     Note: This function does not check whether the castling violates check.
 
+on_board(board, x,y)
 move_on_board(move_tuple)
 pawn_move(board, row, col, team)
     Returns moves in the form (piece_at_and, end_row, end_col).
@@ -65,8 +62,12 @@ iter_2d(arr)
 build_data_with_labels(game)
 vectorize(board)
 
+./main.py-----------------------------------------------------------------------
+gen_pairs(arr)
+
 ./read_pgn.py-------------------------------------------------------------------
 TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
+TODO: Handle en'passant by making pawns "fresh pawns" for exactly one move after a double move.
 
 Game
     __init__(self, result, moves)

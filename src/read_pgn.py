@@ -363,7 +363,7 @@ class Game:
         '''
 
         # Regardless of any other movements, all fresh pawns are converted to regular pawns.
-        for x,y in zip(np.where(self.board*team > 0)):
+        for x,y in zip(*np.where(self.board*team > 0)):
             if self.board[x,y] == team*fP:
                 self.board[x,y] = team*P
 

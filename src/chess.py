@@ -22,7 +22,6 @@ def is_valid_move(start, end, team):
     move by the specified team can map start to end.
     TODO: Decide whether (64,) or (8,8) shape is preferable.  Consider 
     efficiency of reshape().
-    TODO: Finish implementing subfunctions.
     '''
     diff = start != end
     moves = {
@@ -56,13 +55,15 @@ def is_valid_move(start, end, team):
             if aft_piece * team < 0 or bef_piece * team > 0:
                 return False
     
+    enpassant = is_enpassant(start, end, team, moves)
+
     # A basic test to verify the number of pieces moved away from squares is equal
     # to the number which moved to squares
-    moves_add_up = len(moves['moveto']) + len(moves['take']) != len(moves['movesfrom'])
+    moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movesfrom']) or enpassant
 
     # Test to verify exactly one move took place 
     # (Note this fails for castling and en'passant)
-    only_one_move = len(moves['movefrom']) == 1 or is_castling(start, end, team, moves) or is_enpassant(start, end, team, moves)
+    only_one_move = len(moves['movefrom']) == 1 or is_castling(start, end, team, moves) or enpassant
 
     # Test to verify that team appropriately responded to a checking threat.
     not_violating_check = not is_in_check(end, team)
@@ -101,11 +102,31 @@ def is_castling(start, end, team, moves):
 
 def is_enpassant(start, end, team, moves):
     '''
-    Determines whether start can be transformed into end by an en'passant move
-    by team.
-    TODO: Implement.
+    Determines whether start can be transformed into end by exactly one 
+    en'passant move by the specified team.
     '''
-    return False
+    start = start.reshape((8,8))
+    end = end.reshape((8,8))
+    passes = enpassant_moves(start, team)
+    
+    # Verifies no other moves took place
+    diff = np.where(start != end)
+    if len(diff[0]) > 3:
+        return False
+    
+    # Verifies en'passant happened
+    move_happened = False
+    for passant in passes:
+        if passant[0] == 'pass left':
+            direction = -team
+        elif passant[0] == 'pass right':
+            direction = team
+        move_happend = move_happened and 
+        (passant[1],passant[2]) in moves['movesto'] and
+        (passant[1]-team, passant[2]) in moves['movesfrom'] and
+        (passant[1]-team, passant[2]+direction) in moves['movesfrom']
+    
+    return move_happened
 
 def is_in_check(board, team):
     '''
@@ -114,7 +135,7 @@ def is_in_check(board, team):
     # List of all moves the opponent can make.
     threats = possible_moves(board, -team)
 
-    for _,x,y in threats:
+    for flag,x,y in threats:
         if board[x,y] == team*K:
             return True
     return False
@@ -126,8 +147,6 @@ def possible_moves(board, team):
     
     Note: this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
-
-    TODO: en'passant moves.
     '''
     piece_locs = zip(np.where(board*team < 0))
     moves = []
@@ -177,9 +196,17 @@ def enpassant_moves(board, team):
     Note: This function does not check whether the castling violates check.
     '''
     moves = []
+
+    # The only rank on which enemy fresh pawns can be located.
     fourth_rank = backrank[-team] - 3*team
+    
+    # Files on which these fresh pawns are found
     enemy_freshpawn_locs = [i for i,x in enumerate(board[fourth_rank,:]) if x == -team*fP]
+
     for y in enemy_freshpawn_locs:
+
+        # If one of team's pawns is in the position to en'passant a fresh pawn,
+        # add it to list.
         if on_board(board, fourth_rank, y+1) == team*P:
             moves.append('pass left', fourth_rank+team, y+1)
         if on_board(board, fourth_rank, y-1) == team*P:
