@@ -16,7 +16,7 @@ C = 7
 O = 7
 empty = 0
 
-def is_valid_move(start, end, team):
+def is_valid_move(start, end, team, verbose=False):
     '''
     Takes in two arrays shaped (64,) and determines if exactly one valid chess 
     move by the specified team can map start to end.
@@ -29,37 +29,40 @@ def is_valid_move(start, end, team):
             'movefrom':[],
             'take':[],
             }
-    for (row,col), bef_piece, aft_piece in zip(np.where(diff), start[diff], end[diff]):
+    for row,col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
                 
         # Piece moves to an empty cell
         if bef_piece == empty:
-            moves['moveto'].append(row,col)
+            moves['moveto'].append((row,col))
 
             # If the moving piece is NOT on the team which should be moving
             if aft_piece * team < 0:
+                if verbose: print("wrong team")
                 return False
         
         # Piece moved away from this cell
         elif aft_piece == empty:
-            moves['movesfrom'].append(row,col)
+            moves['movefrom'].append((row,col))
             
             # If the moving piece is NOT on the team which should be moving
             if bef_piece * team < 0:
+                if verbose: print("wrong team")
                 return False
 
 
         else:
-            moves['take'].append(row,col)
+            moves['take'].append((row,col))
             
             # If one's own piece is taken, or the wrong team acted
             if aft_piece * team < 0 or bef_piece * team > 0:
+                if verbose: print("wrong team")
                 return False
     
     enpassant = is_enpassant(start, end, team, moves)
 
     # A basic test to verify the number of pieces moved away from squares is equal
     # to the number which moved to squares
-    moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movesfrom']) or enpassant
+    moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movefrom']) or enpassant
 
     # Test to verify exactly one move took place 
     # (Note this fails for castling and en'passant)
@@ -67,6 +70,13 @@ def is_valid_move(start, end, team):
 
     # Test to verify that team appropriately responded to a checking threat.
     not_violating_check = not is_in_check(end, team)
+
+    if verbose:
+        print("moves_add_up", moves_add_up)
+        print("only_one_move", only_one_move)
+        print("violating_check", not not_violating_check)
+        print("is castling", is_castling(start, end, team, moves))
+        print("en passant", enpassant)
 
     return moves_add_up and only_one_move and not_violating_check
 
@@ -88,16 +98,16 @@ def is_castling(start, end, team, moves):
 
         # This boolean verifies the team is not in check and the king and rook 
         # are in the correct places before and after the move
-        castling = not is_in_check(start, team) and 
-            (files['kf'],backrank[team]) in moves['movefrom'] and
-            (files['rf'],backrank[team]) in moves['movefrom'] and
-            (files['kt'],backrank[team]) in moves['movesto'] and
-            (files['rt'],backrank[team]) in moves['movesto'] and
-            start[files['rf'],backrank[team]] == team*R and 
-            start[files['kf'],backrank[team]] == team*K and 
-            end[files['kt'],backrank[team]] == team*K and 
-            end[files['kf'],backrank[team]] == team*R
-    
+        castling = bool(not is_in_check(start, team) and
+        (files['kf'],backrank[team]) in moves['movefrom'] and
+        (files['rf'],backrank[team]) in moves['movefrom'] and
+        (files['kt'],backrank[team]) in moves['moveto'] and
+        (files['rt'],backrank[team]) in moves['moveto'] and
+        start[files['rf'],backrank[team]] == team*R and
+        start[files['kf'],backrank[team]] == team*K and
+        end[files['kt'],  backrank[team]] == team*K and
+        end[files['kf'],  backrank[team]] == team*R)
+    print("castling: ", castling, type(castling))    
     return castling
 
 def is_enpassant(start, end, team, moves):
@@ -121,10 +131,10 @@ def is_enpassant(start, end, team, moves):
             direction = -team
         elif passant[0] == 'pass right':
             direction = team
-        move_happend = move_happened and 
-        (passant[1],passant[2]) in moves['movesto'] and
-        (passant[1]-team, passant[2]) in moves['movesfrom'] and
-        (passant[1]-team, passant[2]+direction) in moves['movesfrom']
+        move_happend = move_happened and ...
+        (passant[1],passant[2]) in moves['moveto'] and ...
+        (passant[1]-team, passant[2]) in moves['movefrom'] and ...
+        (passant[1]-team, passant[2]+direction) in moves['movefrom']
     
     return move_happened
 
@@ -148,7 +158,7 @@ def possible_moves(board, team):
     Note: this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
     '''
-    piece_locs = zip(np.where(board*team < 0))
+    opposing_piece_locs = zip(*np.where(board*team < 0))
     moves = []
     for x,y in opposing_piece_locs:
         if board[x,y] == team*P: 
@@ -184,9 +194,9 @@ def castling_moves(board, team):
             # Verify spaces between rook and king are empty.
             for f in range(min(files['rf'],files['kf'])+1, max(files['rf'],files['kf'])):
                 if board[f, br] != empty:
-                    del moves[ind]
+                    moves[ind] = False
                     break
-    return moves
+    return [m for m in moves if m]
 
 def enpassant_moves(board, team):
     '''
@@ -233,7 +243,7 @@ def pawn_move(board, row, col, team):
         
         # Handle double-move if have not moved previously.
         if board[row+2*team,col] == empty and row == backrank[team] + team:
-            moves.append(row+2*team, col)
+            moves.append((row+2*team, col))
     
     # Attacks
     candidates = {(row+team,col+1), (row+team,col-1)}
@@ -242,7 +252,7 @@ def pawn_move(board, row, col, team):
         moves.append([P, row+team,col-1])
 
     # Handle promotions
-    elif row == backrank[-team] - team:
+    if row == backrank[-team] - team:
         for p_code in piece.values():
             if p_code != K:
                 moves.append(p_code, row+team, col)

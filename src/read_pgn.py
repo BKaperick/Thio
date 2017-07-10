@@ -65,7 +65,7 @@ class Game:
         If savestates is True, the board is deep-copied after each board change.
         If verbose is True, the board is printed after each black move.
         '''
-        states = []
+        states = [self.board.copy()]
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         for i, m in enumerate(self.moves):
             if verbose: print(i,m)
@@ -91,7 +91,7 @@ class Game:
             
             if verbose:
                 print("\n", m)
-                self.Print()
+                print_board(self.board)
         
         if savestates:
             return states
@@ -395,19 +395,19 @@ class Game:
                 self.setCoord(4, team, team*R)
                 self.setCoord(1, team, empty)
 
-    def Print(self):
-        ''' Print board in a human-readable format. '''
-        remap = {v:'w' + k for k,v in piece.items()}
-        remap.update({-v:'b' + k for k,v in piece.items()})
-        remap[0] = '  '
-        printedBoard = np.zeros((8,8), dtype=object)
-        for i in range(8):
-            for j in range(8):
-                printedBoard[j][i] = remap[self.board[i][j]]
-        print('     A    B    C    D    E    F    G    H')
-        for i,r in enumerate(printedBoard):
-            print(i+1,r)
-        print('\n')
+def print_board(board):
+    ''' Print board in a human-readable format. '''
+    remap = {v:'w' + k for k,v in piece.items()}
+    remap.update({-v:'b' + k for k,v in piece.items()})
+    remap[0] = '  '
+    printedBoard = np.zeros((8,8), dtype=object)
+    for i in range(8):
+        for j in range(8):
+            printedBoard[j][i] = remap[board[i][j]]
+    print('     A    B    C    D    E    F    G    H')
+    for i,r in enumerate(printedBoard):
+        print(i+1,r)
+    print('\n')
 
 def parsePGN(fname):
     '''
@@ -436,8 +436,27 @@ def parsePGN(fname):
             #Middle of a game
             if inMoves:
                 moves += line.replace('\n',' ')
-                
+    
     return games
+
+def only_correct_games(games):
+    '''
+    Returns a filtered list of games which can be parsed correctly and 
+    completely by Game.runGame().
+
+    Technically, the standard this function checks is that Game.runGame()
+    completes without an index error, so it is possible there is still some
+    amount of incorrectness in the Game code.
+    '''
+    correct_games = []
+    for g in games:
+        try:
+            g.runGame()
+            correct_games.append(g)
+        except IndexError:
+            pass
+    return correct_games
+
 
 if __name__ == "__main__":
 

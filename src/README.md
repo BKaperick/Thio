@@ -1,6 +1,6 @@
 
 ./chess.py----------------------------------------------------------------------
-is_valid_move(start, end, team)
+is_valid_move(start, end, team, verbose=False)
     Takes in two arrays shaped (64,) and determines if exactly one valid chess 
     move by the specified team can map start to end.
     TODO: Decide whether (64,) or (8,8) shape is preferable.  Consider 
@@ -130,9 +130,17 @@ Game
         Given a start and end string in standard chess notation and a team 
         distinction, the board gets updated accordingly.
 
-    Print(self)
-        Print board in a human-readable format.
+print_board(board)
+    Print board in a human-readable format.
 parsePGN(fname)
     Take in a string file location fname and return a list of games.
     Games list is comprised of Game objects.
+
+only_correct_games(games)
+    Returns a filtered list of games which can be parsed correctly and 
+    completely by Game.runGame().
+
+    Technically, the standard this function checks is that Game.runGame()
+    completes without an index error, so it is possible there is still some
+    amount of incorrectness in the Game code.
 

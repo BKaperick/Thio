@@ -14,9 +14,10 @@ if __name__ == "__main__":
     total = 0
     for start, end, team in gen_pairs(states):
         result = is_valid_move(start, end, team)
-        correct += int(result), total += 1
+        correct += int(result)
+        total += 1
 
-    print(correct + " / " + total)
+    print(correct , " / " , total)
     
 
     
