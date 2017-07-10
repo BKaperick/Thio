@@ -439,7 +439,7 @@ def parsePGN(fname):
     
     return games
 
-def only_correct_games(games):
+def only_correct_games(fname, games):
     '''
     Returns a filtered list of games which can be parsed correctly and 
     completely by Game.runGame().
@@ -448,19 +448,27 @@ def only_correct_games(games):
     completes without an index error, so it is possible there is still some
     amount of incorrectness in the Game code.
     '''
-    correct_games = []
-    for g in games:
+    correct_game_indices = []
+    for i,g in enumerate(games):
         try:
             g.runGame()
-            correct_games.append(g)
+            correct_game_indices.append(i)
         except IndexError:
             pass
-    return correct_games
+    #fresh_games = parsePGN(fname)
+    #correct_fresh_games = [x for i,x in enumerate(fresh_games) if i in correct_game_indices]
+    #return correct_fresh_games
+    return correct_game_indices
+
+def clean_file(fname, indices):
+    new_fname = fname[:-4] + "_corrected_.pgn"
+    with open(fname) as f:
+        with open(new_fname, "w") as new_f:
 
 
 if __name__ == "__main__":
 
-    games = parsePGN(fname)
+    games = only_correct_games(fname, parsePGN(fname))
     #games[14].runGame(False, True)
     tally = 0
     for i,g in enumerate(games):
@@ -469,5 +477,5 @@ if __name__ == "__main__":
             g.runGame()
             tally += 1
         except IndexError:
-            pass
+            print("failed")
     print(tally / float(len(games)))
