@@ -173,7 +173,6 @@ class Game:
         which contains a list of coordinates of pieces which could make 
         the inputted move.
         '''
-
         # If there are multiple options and move supposes there should be no
         # ambiguity by only listing two coordinates (4 characters)
         if len(starts) > 1 and len(move) == 4:
@@ -362,10 +361,25 @@ class Game:
         Given a start and end string in standard chess notation and a team 
         distinction, the board gets updated accordingly.
         '''
+
+        # Regardless of any other movements, all fresh pawns are converted to regular pawns.
+        for x,y in zip(np.where(self.board*team > 0)):
+            if self.board[x,y] == team*fP:
+                self.board[x,y] = team*P
+
+
         #Special case of a promotion (assumes to queen)
-        if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -1*P:
+        if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
             self.setCoord(end[0], end[1], team*Q)
         else:
+            # In the case of en passant
+            if self.coord(*start) == team*P and abs(end[1] - start[1]) == 2:
+                self.setCoord(end[0], end[1], team*fP)
+
+            # All other basic moves
+            else:
+                self.setCoord(end[0], end[1], self.coord(*start))
+
             #Replace destination with moving piece
             self.setCoord(end[0], end[1], self.coord(*start))
         

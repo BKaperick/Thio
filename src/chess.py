@@ -6,6 +6,7 @@ Bl = -1
 backrank = {Wh:0, Bl:7}
 
 P = 1
+fP = 8
 R = 2
 N = 3
 B = 4
@@ -176,13 +177,20 @@ def enpassant_moves(board, team):
     Note: This function does not check whether the castling violates check.
     '''
     moves = []
-    second_rank = backrank[-team] - team
-    enemy_pawn_locs = [i for i,x in enumerate(board[second_rank,:]) if x == -team*P]
-    for x in enemy_pawn_locs:
-        if board[second_rank+team,x] == board[second_rank+2*team,x] == empty:
+    fourth_rank = backrank[-team] - 3*team
+    enemy_freshpawn_locs = [i for i,x in enumerate(board[fourth_rank,:]) if x == -team*fP]
+    for y in enemy_freshpawn_locs:
+        if on_board(board, fourth_rank, y+1) == team*P:
+            moves.append('pass left', fourth_rank+team, y+1)
+        if on_board(board, fourth_rank, y-1) == team*P:
+            moves.append('pass right', fourth_rank+team, y+1)
+    return moves
             
 
-
+def on_board(board, x,y):
+    if 0 <= x <= 7 and 0 <= y <= 7:
+        return board[x,y]
+    return None
 
 def move_on_board(move_tuple):
     return [(p,r,c) for p,r,c in move_tuple if 0 <= r <= 7 and 0 <= c <= 7]
