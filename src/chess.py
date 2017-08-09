@@ -107,7 +107,7 @@ def is_castling(start, end, team, moves):
         start[files['kf'],backrank[team]] == team*K and
         end[files['kt'],  backrank[team]] == team*K and
         end[files['kf'],  backrank[team]] == team*R)
-    print("castling: ", castling, type(castling))    
+    #print("castling: ", castling, type(castling))    
     return castling
 
 def is_enpassant(start, end, team, moves):

@@ -67,6 +67,7 @@ class Game:
         '''
         states = [self.board.copy()]
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
+        
         for i, m in enumerate(self.moves):
             if verbose: print(i,m)
             self.movenum += 1
@@ -74,6 +75,7 @@ class Game:
             # Pass in white's move in standard chess notation and white's team 
             # code to extract starting and ending positions.
             startW, endW = self.clarifyMove(m[0], Wh)
+            
             # Update the board
             self.movePiece(startW, endW, Wh)
             
@@ -448,6 +450,8 @@ def only_correct_games(fname, games):
     completes without an index error, so it is possible there is still some
     amount of incorrectness in the Game code.
     '''
+    
+    # Identifies games which run without error
     correct_game_indices = []
     for i,g in enumerate(games):
         try:
@@ -455,20 +459,25 @@ def only_correct_games(fname, games):
             correct_game_indices.append(i)
         except IndexError:
             pass
-    #fresh_games = parsePGN(fname)
-    #correct_fresh_games = [x for i,x in enumerate(fresh_games) if i in correct_game_indices]
-    #return correct_fresh_games
-    return correct_game_indices
 
-def clean_file(fname, indices):
-    new_fname = fname[:-4] + "_corrected_.pgn"
-    with open(fname) as f:
-        with open(new_fname, "w") as new_f:
+    fresh_games = parsePGN(fname)
+    correct_fresh_games = [x for i,x in enumerate(fresh_games) if i in correct_game_indices]
+    return correct_fresh_games
+    #return correct_game_indices
+
+#def clean_file(fname, indices):
+#    '''
+#    Reads fname and 
+#    '''
+#    new_fname = fname[:-4] + "_corrected_.pgn"
+#    with open(fname) as f:
+#        with open(new_fname, "w") as new_f:
+            
 
 
 if __name__ == "__main__":
 
-    games = only_correct_games(fname, parsePGN(fname))
+    games = only_correct_game_indices(fname, parsePGN(fname))
     #games[14].runGame(False, True)
     tally = 0
     for i,g in enumerate(games):

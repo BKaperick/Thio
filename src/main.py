@@ -9,8 +9,15 @@ def gen_pairs(arr):
         team *= -1
 
 if __name__ == "__main__":
-    games = only_correct_games(parsePGN(fname))
-    states = chain([g.runGame() for g in games])
+    games = parsePGN(fname)
+    games = only_correct_games(fname, games)
+    
+    states = []
+    for game in games:
+        states += game.runGame()
+
+    #chain([games[ind].runGame() for ind in game_indices])
+
     correct = 0
     total = 0
     for start, end, team in gen_pairs(states):
