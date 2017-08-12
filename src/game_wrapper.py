@@ -8,6 +8,7 @@ def iter_2d(arr):
             yield i,cell
             i += 1
 
+
 def build_data_with_labels(game):
     states = game.runGame()
     

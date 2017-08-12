@@ -4,7 +4,7 @@ from itertools import chain
 
 def gen_pairs(games):
     '''
-    arr is a list of game states
+    games is a list of game states
     '''
     for game in games:
         states = game.runGame()
@@ -14,7 +14,7 @@ def gen_pairs(games):
             team *= -1
 
 if __name__ == "__main__":
-    games = parsePGN(fname)
+    games = parsePGN(fname, 4)
     games = only_correct_games(fname, games)
     
     #states = []
@@ -25,12 +25,19 @@ if __name__ == "__main__":
 
     correct = 0
     total = 0
+    
     for start, end, team in gen_pairs(games):
-        result = is_valid_move(start, end, team)
+        result = is_valid_move(start, end, team, verbose=0)
+        if not result:
+            print("failed: ")
+            print_board(start)
+            print_board(end)
+            print(team)
+            break
         correct += int(result)
         total += 1
 
-    print(correct , " / " , total)
+    print("finished: ", correct , " / " , total)
     
 
     

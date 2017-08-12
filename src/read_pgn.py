@@ -411,7 +411,7 @@ def print_board(board):
         print(i+1,r)
     print('\n')
 
-def parsePGN(fname):
+def parsePGN(fname, max_count = 0):
     '''
     Take in a string file location fname and return a list of games.
     Games list is comprised of Game objects.
@@ -425,7 +425,7 @@ def parsePGN(fname):
             #Start of a game
             if line[0] == '1':
                 inMoves = True
-                
+             
             #End of a game
             elif inMoves and line == '\n':
                 moves = moves.split()
@@ -435,9 +435,13 @@ def parsePGN(fname):
                 inMoves = False
                 moves = ''
                 
+                if len(games) == max_count:
+                    break
+                
             #Middle of a game
             if inMoves:
                 moves += line.replace('\n',' ')
+            
     
     return games
 
@@ -459,11 +463,12 @@ def only_correct_games(fname, games):
             correct_game_indices.append(i)
         except IndexError:
             pass
-
+    
+    # The error check code calls runGame() which can only be called once per
+    # game, so they must be regenerated.
     fresh_games = parsePGN(fname)
     correct_fresh_games = [x for i,x in enumerate(fresh_games) if i in correct_game_indices]
     return correct_fresh_games
-    #return correct_game_indices
 
 #def clean_file(fname, indices):
 #    '''

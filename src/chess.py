@@ -29,7 +29,9 @@ def is_valid_move(start, end, team, verbose=False):
             'movefrom':[],
             'take':[],
             }
-    for row,col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
+
+    # Iterate over all spaces which are different between the start and end board
+    for row, col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
                 
         # Piece moves to an empty cell
         if bef_piece == empty:
@@ -49,7 +51,6 @@ def is_valid_move(start, end, team, verbose=False):
                 if verbose: print("wrong team")
                 return False
 
-
         else:
             moves['take'].append((row,col))
             
@@ -59,17 +60,24 @@ def is_valid_move(start, end, team, verbose=False):
                 return False
     
     enpassant = is_enpassant(start, end, team, moves)
+    
 
     # A basic test to verify the number of pieces moved away from squares is equal
     # to the number which moved to squares
     moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movefrom']) or enpassant
+    #if not moves_add_up:
+    #    return False
 
     # Test to verify exactly one move took place 
     # (Note this fails for castling and en'passant)
     only_one_move = len(moves['movefrom']) == 1 or is_castling(start, end, team, moves) or enpassant
+    #if not only_one_move:
+    #    return False
 
     # Test to verify that team appropriately responded to a checking threat.
     not_violating_check = not is_in_check(end, team)
+    #if not_only_one_move:
+    #    return False
 
     if verbose:
         print("moves_add_up", moves_add_up)
@@ -77,10 +85,11 @@ def is_valid_move(start, end, team, verbose=False):
         print("violating_check", not not_violating_check)
         print("is castling", is_castling(start, end, team, moves))
         print("en passant", enpassant)
+        print("\n")
 
     return moves_add_up and only_one_move and not_violating_check
 
-def is_castling(start, end, team, moves):
+def is_castling(start, end, team, moves, verbose=False):
     '''
     Checks whether team is castling legally.  Does not make any claims about 
     whether other moves are also taking place.
@@ -93,12 +102,23 @@ def is_castling(start, end, team, moves):
     start = start.reshape((8,8))
     end = end.reshape((8,8))
     
-    castling = False
-    for files in castling_files:
+    castling = [False, False]
+    for i,files in enumerate(castling_files):
+        
+        if verbose:
+            print("is in check: ", is_in_check(start, team))
+            print((files['kf'],backrank[team]) in moves['movefrom'])
+            print((files['rf'],backrank[team]) in moves['movefrom'])
+            print((files['kt'],backrank[team]) in moves['moveto'])
+            print((files['rt'],backrank[team]) in moves['moveto'])
+            print(start[files['rf'],backrank[team]] == team*R)
+            print(start[files['kf'],backrank[team]] == team*K)
+            print(end[files['kt'],  backrank[team]] == team*K)
+            print(end[files['rt'],  backrank[team]] == team*R)
 
         # This boolean verifies the team is not in check and the king and rook 
         # are in the correct places before and after the move
-        castling = bool(not is_in_check(start, team) and
+        castling[i] = bool(not is_in_check(start, team) and
         (files['kf'],backrank[team]) in moves['movefrom'] and
         (files['rf'],backrank[team]) in moves['movefrom'] and
         (files['kt'],backrank[team]) in moves['moveto'] and
@@ -106,9 +126,10 @@ def is_castling(start, end, team, moves):
         start[files['rf'],backrank[team]] == team*R and
         start[files['kf'],backrank[team]] == team*K and
         end[files['kt'],  backrank[team]] == team*K and
-        end[files['kf'],  backrank[team]] == team*R)
-    #print("castling: ", castling, type(castling))    
-    return castling
+        end[files['rt'],  backrank[team]] == team*R)
+
+    if verbose: print("castling: ", castling)    
+    return sum(castling) == 1
 
 def is_enpassant(start, end, team, moves):
     '''
