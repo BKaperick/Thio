@@ -57,7 +57,7 @@ class Game:
 
         self.movenum = 0
 
-    def runGame(self, savestates=True, verbose=False):
+    def runGame(self, savestates=True, verbose=0):
         '''
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
@@ -66,32 +66,36 @@ class Game:
         If verbose is True, the board is printed after each black move.
         '''
         states = [self.board.copy()]
-        # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
+        startB, endB = '', ''
         
+        # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         for i, m in enumerate(self.moves):
             if verbose: print(i,m)
             self.movenum += 1
 
             # Pass in white's move in standard chess notation and white's team 
             # code to extract starting and ending positions.
-            startW, endW = self.clarifyMove(m[0], Wh)
+            (startW, endW), enpassant_flag = self.clarifyMove(m[0], Wh, startB, endB)
+            print(startW, endW, enpassant_flag)
             
             # Update the board
-            self.movePiece(startW, endW, Wh)
+            self.movePiece(startW, endW, Wh, enpassant=enpassant_flag)
             
             if savestates:
                 states.append(self.board.copy())
             
             # Pass in black's move in standard chess notation and black's team 
             # code to extract starting and ending positions.
-            startB, endB = self.clarifyMove(m[1], Bl)
+            (startB, endB), enpassant_flag = self.clarifyMove(m[1], Bl, startW, endW)
+            print(startW, endW, enpassant_flag)
+            
             # Update the board
-            self.movePiece(startB, endB, Bl)
+            self.movePiece(startB, endB, Bl, enpassant=enpassant_flag)
             
             if savestates:
                 states.append(self.board.copy())
             
-            if verbose:
+            if verbose >= 2:
                 print("\n", m)
                 print_board(self.board)
         
@@ -191,7 +195,7 @@ class Game:
         return start
 
 
-    def clarifyMove(self, move, team):
+    def clarifyMove(self, move, team, prev_move_start, prev_move_end):
         '''
         move - string containing standard chess notation for the move
         team - corresponds to one of the two team codes
@@ -223,18 +227,22 @@ class Game:
             #If start is incorrect
             if self.coord(*start) != team*P:
                start[1] -= team
-            return (start, end)
+            return (start, end), False
                
         #capture -- does not include en'passant
         if move[0] in coord.keys():
             if '=' in move:
                 if len(move) == 4:
-                    return ([coord[move[0]], int(move[1]) - team], [coord[move[0]], int(move[1])])
+                    return ([coord[move[0]], int(move[1]) - team], [coord[move[0]], int(move[1])]), False
                 else:
-                    return ([coord[move[0]], int(move[3]) - team], [coord[move[2]], int(move[3])])
+                    return ([coord[move[0]], int(move[3]) - team], [coord[move[2]], int(move[3])]), False
 
             if 'x' in move:
-               return ([coord[move[0]], end[1] - team], end)
+                output = ([coord[move[0]], end[1] - team], end)
+                # En'passant
+                if coord[move[2]] == prev_move_start[0] == prev_move_end[0] and prev_move_end[1] + team == end[1]:
+                   return output, True 
+                return output, False
         
         # Do not need to know if a piece is being taken
         move = move.replace('x','')
@@ -316,12 +324,12 @@ class Game:
         elif p == O:
             # Queen-side castling
             if len(move) == 5:
-                return ([5,team],[3,team])
+                return ([5,team],[3,team]), False
             # King-side castling
             else:
-                return ([5,team],[7,team])
+                return ([5,team],[7,team]), False
 
-        return(start,end)
+        return(start,end), False
 
     def coord(self, c1, c2):
         '''
@@ -339,7 +347,6 @@ class Game:
         try:
             return self.board[c1-1, c2-1]
         except IndexError:
-            #print("failed",c1,c2)
             return None
 
     #Sets the board position to val
@@ -358,35 +365,37 @@ class Game:
         if c2 < 0: c2 += 9
         self.board[c1-1, c2-1] = val
 
-    def movePiece(self, start, end, team):
+    def movePiece(self, start, end, team, enpassant = False):
         '''
-        Given a start and end string in standard chess notation and a team 
+        Given a start and end coordinates (2-lists) and a team 
         distinction, the board gets updated accordingly.
         '''
-
         # Regardless of any other movements, all fresh pawns are converted to regular pawns.
         for x,y in zip(*np.where(self.board*team > 0)):
             if self.board[x,y] == team*fP:
                 self.board[x,y] = team*P
 
-
         #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
-            self.setCoord(end[0], end[1], team*Q)
+            self.setCoord(*end, team*Q)
         else:
-            # In the case of en passant
+            # In the case of double-moving pawn (special case to allow en'passant on it)
             if self.coord(*start) == team*P and abs(end[1] - start[1]) == 2:
-                self.setCoord(end[0], end[1], team*fP)
+                self.setCoord(*end, team*fP)
 
             # All other basic moves
             else:
-                self.setCoord(end[0], end[1], self.coord(*start))
-
+                self.setCoord(*end, self.coord(*start))
+        
             #Replace destination with moving piece
-            self.setCoord(end[0], end[1], self.coord(*start))
+            self.setCoord(*end, self.coord(*start))
+        
+        # Remove the pawn that has been en'passanted
+        if enpassant:
+            self.setCoord(end[0], end[1] - team, empty)
         
         #Replace starting place with empty
-        self.setCoord(start[0], start[1],empty)
+        self.setCoord(*start, empty)
 
         #Handles the rook move in the case of castling
         if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
