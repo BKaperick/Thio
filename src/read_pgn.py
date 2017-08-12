@@ -76,7 +76,6 @@ class Game:
             # Pass in white's move in standard chess notation and white's team 
             # code to extract starting and ending positions.
             (startW, endW), enpassant_flag = self.clarifyMove(m[0], Wh, startB, endB)
-            print(startW, endW, enpassant_flag)
             
             # Update the board
             self.movePiece(startW, endW, Wh, enpassant=enpassant_flag)
@@ -87,7 +86,6 @@ class Game:
             # Pass in black's move in standard chess notation and black's team 
             # code to extract starting and ending positions.
             (startB, endB), enpassant_flag = self.clarifyMove(m[1], Bl, startW, endW)
-            print(startW, endW, enpassant_flag)
             
             # Update the board
             self.movePiece(startB, endB, Bl, enpassant=enpassant_flag)
@@ -420,7 +418,7 @@ def print_board(board):
         print(i+1,r)
     print('\n')
 
-def parsePGN(fname, max_count = 0):
+def parsePGN(fname, max_count = 0, verbose=False):
     '''
     Take in a string file location fname and return a list of games.
     Games list is comprised of Game objects.
@@ -430,6 +428,7 @@ def parsePGN(fname, max_count = 0):
     moves = ''
     with open(fname) as pgn:
         for line in pgn.readlines():
+            if verbose: print(line, end='')
             
             #Start of a game
             if line[0] == '1':
@@ -454,7 +453,7 @@ def parsePGN(fname, max_count = 0):
     
     return games
 
-def only_correct_games(fname, games):
+def only_correct_games(fname, games, verbose=False):
     '''
     Returns a filtered list of games which can be parsed correctly and 
     completely by Game.runGame().
@@ -475,8 +474,8 @@ def only_correct_games(fname, games):
     
     # The error check code calls runGame() which can only be called once per
     # game, so they must be regenerated.
-    fresh_games = parsePGN(fname)
-    correct_fresh_games = [x for i,x in enumerate(fresh_games) if i in correct_game_indices]
+    fresh_games = parsePGN(fname, verbose=verbose)
+    correct_fresh_games = (x for i,x in enumerate(fresh_games) if i in correct_game_indices)
     return correct_fresh_games
 
 #def clean_file(fname, indices):
@@ -491,7 +490,7 @@ def only_correct_games(fname, games):
 
 if __name__ == "__main__":
 
-    games = only_correct_game_indices(fname, parsePGN(fname))
+    games = only_correct_games(fname, parsePGN(fname))
     #games[14].runGame(False, True)
     tally = 0
     for i,g in enumerate(games):

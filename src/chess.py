@@ -29,6 +29,8 @@ def is_valid_move(start, end, team, verbose=False):
             'movefrom':[],
             'take':[],
             }
+    
+    enpassant = is_enpassant(start, end, team, moves)
 
     # Iterate over all spaces which are different between the start and end board
     for row, col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
@@ -38,7 +40,7 @@ def is_valid_move(start, end, team, verbose=False):
             moves['moveto'].append((row,col))
 
             # If the moving piece is NOT on the team which should be moving
-            if aft_piece * team < 0:
+            if not enpassant and aft_piece * team < 0:
                 if verbose: print("wrong team")
                 return False
         
@@ -47,7 +49,7 @@ def is_valid_move(start, end, team, verbose=False):
             moves['movefrom'].append((row,col))
             
             # If the moving piece is NOT on the team which should be moving
-            if bef_piece * team < 0:
+            if not enpassant and bef_piece * team < 0:
                 if verbose: print("wrong team")
                 return False
 
@@ -55,11 +57,10 @@ def is_valid_move(start, end, team, verbose=False):
             moves['take'].append((row,col))
             
             # If one's own piece is taken, or the wrong team acted
-            if aft_piece * team < 0 or bef_piece * team > 0:
+            if not enpassant and aft_piece * team < 0 or bef_piece * team > 0:
                 if verbose: print("wrong team")
                 return False
     
-    enpassant = is_enpassant(start, end, team, moves)
     
 
     # A basic test to verify the number of pieces moved away from squares is equal
@@ -139,6 +140,7 @@ def is_enpassant(start, end, team, moves):
     start = start.reshape((8,8))
     end = end.reshape((8,8))
     passes = enpassant_moves(start, team)
+    print("passes: ", passes)
     
     # Verifies no other moves took place
     diff = np.where(start != end)

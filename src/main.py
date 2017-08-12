@@ -11,11 +11,13 @@ def gen_pairs(games):
         team = 1
         for i,state in enumerate(states[:-1]):
             yield state, states[i+1], team, i
+
+            # Alternate team between moves
             team *= -1
 
 if __name__ == "__main__":
-    games = parsePGN(fname)
-    games = only_correct_games(fname, games)
+    games = parsePGN(fname,verbose=1)
+    games = only_correct_games(fname, games, verbose=0)
     
     #states = []
     #for game in games:
@@ -27,7 +29,7 @@ if __name__ == "__main__":
     total = 0
     
     for start, end, team, index in gen_pairs(games):
-        result = is_valid_move(start, end, team, verbose=0)
+        result = is_valid_move(start, end, team, verbose=1)
         if not result:
             print("failed: ", index/2)
             print_board(start)
