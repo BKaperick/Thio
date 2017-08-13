@@ -18,7 +18,7 @@ def gen_pairs(games):
 
 if __name__ == "__main__":
     games = parsePGN(fname, max_count=0, verbose=0)
-    games = only_correct_games(fname, games, verbose=1)
+    games = only_correct_games(fname, games, verbose=0)
     
     #states = []
     #for game in games:

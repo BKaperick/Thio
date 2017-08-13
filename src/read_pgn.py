@@ -469,6 +469,9 @@ def only_correct_games(fname, games, verbose=False):
     completes without an index error, so it is possible there is still some
     amount of incorrectness in the Game code.
     '''
+    # The error check code calls runGame() which can only be called once per
+    # game, so they must be regenerated.
+    fresh_games = parsePGN(fname, verbose=verbose)
     
     # Identifies games which run without error
     correct_game_indices = []
@@ -476,14 +479,12 @@ def only_correct_games(fname, games, verbose=False):
         try:
             g.runGame()
             correct_game_indices.append(i)
+            yield fresh_games[i]
         except IndexError:
             pass
     
-    # The error check code calls runGame() which can only be called once per
-    # game, so they must be regenerated.
-    fresh_games = parsePGN(fname, verbose=verbose)
-    correct_fresh_games = (x for i,x in enumerate(fresh_games) if i in correct_game_indices)
-    return correct_fresh_games
+    #correct_fresh_games = (x for i,x in enumerate(fresh_games) if i in correct_game_indices)
+    #return correct_fresh_games
 
 #def clean_file(fname, indices):
 #    '''
