@@ -7,8 +7,7 @@ def gen_pairs(games):
     games is a list of game states
     '''
     for gi, game in enumerate(games):
-        print("Game number: ", gi)
-        states = game.runGame(verbose=1)
+        states = game.runGame(verbose=0)
         team = 1
         for i,state in enumerate(states[:-1]):
             yield state, states[i+1], team, i
@@ -30,10 +29,7 @@ if __name__ == "__main__":
     total = 0
     
     for start, end, team, index in gen_pairs(games):
-        result = is_valid_move(start, end, team, verbose=1)
-        if index == 89:
-            print_board(start)
-            print_board(end)
+        result = is_valid_move(start, end, team, verbose=0)
 
         if not result:
             print("failed: ", index)

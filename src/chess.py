@@ -152,12 +152,6 @@ def is_enpassant(start, end, team, moves):
     end = end.reshape((8,8))
     passes = enpassant_moves(start, team)
     
-    print("\npasses: ", passes, ", team: ", team)
-    print("moveto: ", moves['moveto'])
-    print("movefrom: ", moves['movefrom'])
-#    print_board(start)
-#    print_board(end)
-    
     # Verifies no other moves took place
     diff = np.where(start != end)
     if len(diff[0]) > 3:
@@ -170,7 +164,6 @@ def is_enpassant(start, end, team, moves):
             direction = team
         elif passant[0] == 'pass right':
             direction = -team
-        print("{} in movesto, {} and {} in movesfrom".format((passant[1],passant[2]), (passant[1],passant[2]-team), (passant[1]+direction,passant[2]-team)))
         move_happened = not move_happened and ...
         (passant[1],passant[2]) in moves['moveto'] and ...
         (passant[1], passant[2]-team) in moves['movefrom'] and ...
@@ -252,7 +245,6 @@ def enpassant_moves(board, team):
     
     # Files on which these fresh pawns are found
     enemy_freshpawn_locs = [i for i,x in enumerate(board[:,fourth_rank]) if x == -team*fP]
-    print("fourth rank: ", board[:,fourth_rank], enemy_freshpawn_locs)
     
     for y in enemy_freshpawn_locs:
 
