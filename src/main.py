@@ -7,6 +7,7 @@ def gen_pairs(games):
     games is a list of game states
     '''
     for gi, game in enumerate(games):
+        print("game number: ", gi)
         states = game.runGame(verbose=0)
         team = 1
         for i,state in enumerate(states[:-1]):
@@ -16,8 +17,8 @@ def gen_pairs(games):
             team *= -1
 
 if __name__ == "__main__":
-    games = parsePGN(fname, max_count=19, verbose=1)
-    games = only_correct_games(fname, games, verbose=0)
+    games = parsePGN(fname, max_count=0, verbose=0)
+    games = only_correct_games(fname, games, verbose=1)
     
     #states = []
     #for game in games:

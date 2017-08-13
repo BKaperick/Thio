@@ -200,6 +200,7 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
+        #print("cm: ", move)
         # Checks do not affect anything
         move = move.replace('+','')
 
@@ -210,6 +211,8 @@ class Game:
         if move != 'O-O' and move != 'O-O-O' and '=' not in move:
             
             # Note this coordinate is in range 1 <= end[i] <= 8
+            # and end[0] is a file
+            # and end[1] is a rank
             end = [coord[move[-2]], int(move[-1])]
 
         ##########
@@ -223,7 +226,7 @@ class Game:
             start = [end[0], end[1] - team]
 
             #If start is incorrect
-            if self.coord(*start) != team*P:
+            if self.coord(*start) != team*P and self.coord(*start) != team*fP:
                start[1] -= team
             return (start, end), False
                
@@ -338,6 +341,9 @@ class Game:
         
         c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
         position which is out of bounds, so None is returned.
+
+        c1 is a file
+        c2 is a rank
         '''
         if c1==0 or c2==0: return None
         if c1 < 0: c1 += 9
@@ -368,12 +374,13 @@ class Game:
         Given a start and end coordinates (2-lists) and a team 
         distinction, the board gets updated accordingly.
         '''
+        #print("mp: ",start, end, team, enpassant)
+        #print_board(self.board)
         # Regardless of any other movements, all fresh pawns are converted to regular pawns.
         for x,y in zip(*np.where(self.board*team > 0)):
             if self.board[x,y] == team*fP:
                 self.board[x,y] = team*P
         
-        pm = False
         #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
             self.setCoord(*end, team*Q)
