@@ -30,38 +30,49 @@ def is_valid_move(start, end, team, verbose=False):
             'take':[],
             }
     
-    enpassant = is_enpassant(start, end, team, moves)
-
     # Iterate over all spaces which are different between the start and end board
+    # row is a file on [0,7]
+    # col is a rank on [0,7]
     for row, col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
-                
+
+        if bef_piece == team*fP and aft_piece == team*P:
+            continue
+
+        if bef_piece == team*fP and aft_piece == empty:
+            pass#continue
+
+
         # Piece moves to an empty cell
         if bef_piece == empty:
             moves['moveto'].append((row,col))
 
             # If the moving piece is NOT on the team which should be moving
-            if not enpassant and aft_piece * team < 0:
-                if verbose: print("wrong team")
-                return False
+            if aft_piece * team < 0:
+                if verbose: print("wrong team(1)")
+                #return False
         
         # Piece moved away from this cell
         elif aft_piece == empty:
             moves['movefrom'].append((row,col))
             
             # If the moving piece is NOT on the team which should be moving
-            if not enpassant and bef_piece * team < 0:
-                if verbose: print("wrong team")
-                return False
+            if bef_piece * team < 0:
+                if verbose:
+                    print("wrong team(2)")
+                    print(aft_piece, bef_piece, team)
+                #return False
 
         else:
             moves['take'].append((row,col))
             
             # If one's own piece is taken, or the wrong team acted
-            if not enpassant and aft_piece * team < 0 or bef_piece * team > 0:
-                if verbose: print("wrong team")
-                return False
+            if aft_piece * team < 0 or bef_piece * team > 0:
+                if verbose:
+                    print("wrong team(3)")
+                    print(aft_piece, bef_piece, team)
+                #return False
     
-    
+    enpassant = is_enpassant(start, end, team, moves)
 
     # A basic test to verify the number of pieces moved away from squares is equal
     # to the number which moved to squares
@@ -140,7 +151,12 @@ def is_enpassant(start, end, team, moves):
     start = start.reshape((8,8))
     end = end.reshape((8,8))
     passes = enpassant_moves(start, team)
-    print("passes: ", passes)
+    
+    print("\npasses: ", passes, ", team: ", team)
+    print("moveto: ", moves['moveto'])
+    print("movefrom: ", moves['movefrom'])
+#    print_board(start)
+#    print_board(end)
     
     # Verifies no other moves took place
     diff = np.where(start != end)
@@ -151,13 +167,14 @@ def is_enpassant(start, end, team, moves):
     move_happened = False
     for passant in passes:
         if passant[0] == 'pass left':
-            direction = -team
-        elif passant[0] == 'pass right':
             direction = team
-        move_happend = move_happened and ...
+        elif passant[0] == 'pass right':
+            direction = -team
+        print("{} in movesto, {} and {} in movesfrom".format((passant[1],passant[2]), (passant[1],passant[2]-team), (passant[1]+direction,passant[2]-team)))
+        move_happened = not move_happened and ...
         (passant[1],passant[2]) in moves['moveto'] and ...
-        (passant[1]-team, passant[2]) in moves['movefrom'] and ...
-        (passant[1]-team, passant[2]+direction) in moves['movefrom']
+        (passant[1], passant[2]-team) in moves['movefrom'] and ...
+        (passant[1]+direction, passant[2]-team) in moves['movefrom']
     
     return move_happened
 
@@ -176,7 +193,7 @@ def is_in_check(board, team):
 def possible_moves(board, team): 
     '''
     Given a board state and a team specifier, returns a list of 3-tuples
-    describing the possible moves that can be made.
+    describing the possible (end positions of?) moves that can be made.
     
     Note: this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
@@ -195,8 +212,8 @@ def possible_moves(board, team):
         elif board[x,y] == team*R:
             moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
     
-    moves += castling_moves(board, team)
-    moves += enpassant_moves(board, team)
+    #moves += castling_moves(board, team)
+    #moves += enpassant_moves(board, team)
     return moves
 
 def castling_moves(board, team):
@@ -234,20 +251,25 @@ def enpassant_moves(board, team):
     fourth_rank = backrank[-team] - 3*team
     
     # Files on which these fresh pawns are found
-    enemy_freshpawn_locs = [i for i,x in enumerate(board[fourth_rank,:]) if x == -team*fP]
-
+    enemy_freshpawn_locs = [i for i,x in enumerate(board[:,fourth_rank]) if x == -team*fP]
+    print("fourth rank: ", board[:,fourth_rank], enemy_freshpawn_locs)
+    
     for y in enemy_freshpawn_locs:
 
         # If one of team's pawns is in the position to en'passant a fresh pawn,
         # add it to list.
-        if on_board(board, fourth_rank, y+1) == team*P:
-            moves.append('pass left', fourth_rank+team, y+1)
-        if on_board(board, fourth_rank, y-1) == team*P:
-            moves.append('pass right', fourth_rank+team, y+1)
+        if on_board(board, y+1, fourth_rank) == team*P:
+            moves.append(('pass left', y, fourth_rank+team))
+        if on_board(board, y-1, fourth_rank) == team*P:
+            moves.append(('pass right', y, fourth_rank+team))
     return moves
             
 
 def on_board(board, x,y):
+    '''
+    x is a file (column) on [0,7]
+    y is a rank (row) on [0,7]
+    '''
     if 0 <= x <= 7 and 0 <= y <= 7:
         return board[x,y]
     return None

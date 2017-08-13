@@ -21,7 +21,7 @@ C = 7
 O = 7
 empty = 0
 
-piece = {'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
+piece = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
 
 # a:1, ..., h:8
 coord = {chr(i):i-96 for i in range(97,105)}
@@ -372,7 +372,8 @@ class Game:
         for x,y in zip(*np.where(self.board*team > 0)):
             if self.board[x,y] == team*fP:
                 self.board[x,y] = team*P
-
+        
+        pm = False
         #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
             self.setCoord(*end, team*Q)
@@ -383,10 +384,8 @@ class Game:
 
             # All other basic moves
             else:
+                #Replace destination with moving piece
                 self.setCoord(*end, self.coord(*start))
-        
-            #Replace destination with moving piece
-            self.setCoord(*end, self.coord(*start))
         
         # Remove the pawn that has been en'passanted
         if enpassant:
@@ -403,6 +402,7 @@ class Game:
             elif end[0] == 3:
                 self.setCoord(4, team, team*R)
                 self.setCoord(1, team, empty)
+
 
 def print_board(board):
     ''' Print board in a human-readable format. '''
