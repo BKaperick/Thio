@@ -2696,7 +2696,7 @@
 [BlackElo "2270"]
 [ECO "C09"]
 
-1.e4 e6 2.d4 d5 3.Nd2 c5 4.exd5 exd5 5.Ngf3 Nc6 6.Bb5 Bd6 7.O-O Ne7 8.dxc5 Bxc5
+1.e4 e6 2.d4 d5 3.Nd2 c5 4.exd5 exd5 5.Ngf3 Nc6 6.Bb5 Bd6 7.O-O Nge7 8.dxc5 Bxc5
 9.Nb3 Bd6 10.Bg5 O-O 11.Re1 Bg4 12.Bh4 Qb6 13.Bd3 h6 14.Bg3 Bxg3 15.hxg3 Rfe8
 16.Qd2 a5 17.a4 Kf8 18.Bb5 Rad8 19.Ne5 Be6 20.Bxc6 Nxc6 21.Nxc6 bxc6 22.Qxa5 Qxa5
 23.Nxa5 c5 24.Nb3 Rc8 25.Nd2 Rb8 26.Ra2 d4 27.b3 Rb4 28.a5 Ra8 29.a6 Ra7
@@ -3255,7 +3255,7 @@
 [BlackElo "2490"]
 [ECO "C28"]
 
-1.e4 e5 2.Nc3 Nc6 3.Bc4 Nf6 4.d3 Bb4 5.Ne2 d5 6.exd5 Nxd5 7.a3 Bxc3+ 8.bxc3 Be6
+1.e4 e5 2.Nc3 Nc6 3.Bc4 Nf6 4.d3 Bb4 5.Nge2 d5 6.exd5 Nxd5 7.a3 Bxc3+ 8.bxc3 Be6
 9.O-O Qd7 10.Rb1 b6 11.Bxd5 Bxd5 12.f4 O-O-O 13.Qe1 e4 14.Qf2 exd3 15.cxd3 Qf5
 16.Qg3 Bc4 17.dxc4 Qxb1 18.Qf3 Rd6 19.c5 bxc5 20.Ng3 f5 21.Be3 Qd3 22.Rc1 Re8
 23.Nf1 g6 24.h3 Re4 25.Bxc5 Rd5 26.Be3 Na5 27.Qf2 Nc4 28.Bxa7 Re2 29.Qh4 Qe4
