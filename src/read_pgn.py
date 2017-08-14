@@ -184,7 +184,9 @@ class Game:
                     start = starts[0]
                 else:
                     start = starts[1]
-        
+        elif len(starts) > 1 and len(move) == 3 and move[0] == 'N':
+            start = starts[1]
+            
         # Simply return the only element from starts if len(starts) == 1, 
         # Or return the first element from starts (sloppy handling).
         else:
