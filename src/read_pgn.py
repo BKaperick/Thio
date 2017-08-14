@@ -411,6 +411,17 @@ class Game:
                 self.setCoord(1, team, empty)
 
 
+def diffs(board1, board2):
+    diff = board1 != board2
+    indices = np.where(diff)
+    final_indices = [[], []]
+    for x,y in zip(*indices):
+        if abs(board1[x,y]) == fP and abs(board2[x,y]) == P:
+            continue
+        final_indices[0].append(x)
+        final_indices[1].append(y)
+    return final_indices
+
 def print_board(board):
     ''' Print board in a human-readable format. '''
     remap = {v:'w' + k for k,v in piece.items()}
@@ -460,7 +471,7 @@ def parsePGN(fname, max_count = 0, verbose=False):
     
     return games
 
-def only_correct_games(fname, games, verbose=False):
+def only_correct_games(fname, max_count = 0, verbose=False):
     '''
     Returns a filtered list of games which can be parsed correctly and 
     completely by Game.runGame().
@@ -471,7 +482,8 @@ def only_correct_games(fname, games, verbose=False):
     '''
     # The error check code calls runGame() which can only be called once per
     # game, so they must be regenerated.
-    fresh_games = parsePGN(fname, verbose=verbose)
+    games = parsePGN(fname, max_count=max_count, verbose=verbose)
+    fresh_games = parsePGN(fname, max_count=max_count, verbose=verbose)
     
     # Identifies games which run without error
     correct_game_indices = []

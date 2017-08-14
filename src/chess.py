@@ -38,10 +38,6 @@ def is_valid_move(start, end, team, verbose=False):
         if bef_piece == team*fP and aft_piece == team*P:
             continue
 
-        if bef_piece == team*fP and aft_piece == empty:
-            pass#continue
-
-
         # Piece moves to an empty cell
         if bef_piece == empty:
             moves['moveto'].append((row,col))
@@ -71,7 +67,6 @@ def is_valid_move(start, end, team, verbose=False):
                     print("wrong team(3)")
                     print(aft_piece, bef_piece, team)
                 #return False
-    
     enpassant = is_enpassant(start, end, team, moves)
 
     # A basic test to verify the number of pieces moved away from squares is equal
@@ -153,10 +148,12 @@ def is_enpassant(start, end, team, moves):
     passes = enpassant_moves(start, team)
     
     # Verifies no other moves took place
-    diff = np.where(start != end)
+    #diff = np.where(start != end)
+    diff = diffs(start, end)
     if len(diff[0]) > 3:
         return False
     
+
     # Verifies en'passant happened
     move_happened = False
     for passant in passes:
