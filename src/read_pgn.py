@@ -30,9 +30,13 @@ coord = {chr(i):i-96 for i in range(97,105)}
 class Game:
     def __init__(self, result, moves):
         '''
-        result - is a string '1' or '0' or '1/2' indicating the game result
-        moves - a list of moves alternating between white and black moves given
-        in standard chess notation.
+        INPUT
+        result -- a string '1' or '0' or '1/2' indicating the game result
+        moves -- a list of moves alternating between white and black moves each 
+        given as a string of standard chess notation.
+
+        RETURN
+        self -- Game instance
 
         Also builds the board to the initial setup ready for simulation.
         self.board[i,j] is the ith rank (row) and jth file (column), each
@@ -440,8 +444,13 @@ def print_board(board):
 
 def parsePGN(fname, max_count = 0, verbose=False):
     '''
-    Take in a string file location fname and return a list of games.
-    Games list is comprised of Game objects.
+    INPUT
+    fname -- string name of PGN file
+    max_count -- maximum number of games to read in
+    verbose -- boolean to print debugging info
+
+    RETURN
+    games -- list of game objects read from file
     '''
     games = []
     inMoves = False
@@ -463,6 +472,7 @@ def parsePGN(fname, max_count = 0, verbose=False):
                 inMoves = False
                 moves = ''
                 
+                # Read at most max_count games
                 if len(games) == max_count:
                     break
                 
@@ -475,12 +485,22 @@ def parsePGN(fname, max_count = 0, verbose=False):
 
 def only_correct_games(fname, max_count = 0, verbose=False):
     '''
-    Returns a filtered list of games which can be parsed correctly and 
+    INPUT
+    fname -- string name of PGN file
+    max_count -- maximum number of games to be read from file
+    verbose -- print debugging info
+
+    YIELD
+    The next game from the PGN file which can be parsed correctly and 
     completely by Game.runGame().
 
-    Technically, the standard this function checks is that Game.runGame()
+    Specifically, this function checks that Game.runGame()
     completes without an index error, so it is possible there is still some
     amount of incorrectness in the Game code.
+
+    Note that the PGN files that I have been using to test this code 
+    occasionally have typos in the game itself, and so failures to parse all
+    games in `fname` may be for that reason.  
     '''
     # The error check code calls runGame() which can only be called once per
     # game, so they must be regenerated.
@@ -497,8 +517,6 @@ def only_correct_games(fname, max_count = 0, verbose=False):
         except IndexError:
             pass
     
-    #correct_fresh_games = (x for i,x in enumerate(fresh_games) if i in correct_game_indices)
-    #return correct_fresh_games
 
 #def clean_file(fname, indices):
 #    '''

@@ -4,7 +4,11 @@ from itertools import chain
 
 def gen_pairs(games):
     '''
-    games is a list of game states
+    INPUT
+    games -- a list of game states
+
+    YIELD
+    state -- 
     '''
     for gi, game in enumerate(games):
         print("game number: ", gi)

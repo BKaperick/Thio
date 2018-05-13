@@ -18,11 +18,20 @@ empty = 0
 
 def is_valid_move(start, end, team, verbose=False):
     '''
-    Takes in two arrays shaped (64,) and determines if exactly one valid chess 
-    move by the specified team can map start to end.
-    TODO: Decide whether (64,) or (8,8) shape is preferable.  Consider 
-    efficiency of reshape().
+    INPUT
+    start -- array shaped (64,) containing a board state
+    end -- array shaped (64,) containing a board state 
+    team -- specifier for team, either `Wh` or `Bl`
+
+    RETURN
+    * Boolean deciding if exactly one valid chess move by `team` can map `start` 
+    to `end`
+
+    TODO
+    * Decide whether (64,) or (8,8) shape is preferable.  Consider efficiency 
+    of reshape().  This is probably not a very important issue.
     '''
+
     diff = start != end
     moves = {
             'moveto':[],
@@ -30,11 +39,17 @@ def is_valid_move(start, end, team, verbose=False):
             'take':[],
             }
     
+    # This loop builds the `moves` dictionary.
     # Iterate over all spaces which are different between the start and end board
-    # row is a file on [0,7]
-    # col is a rank on [0,7]
+    # row -- the row that was changed (a file in range [0,...,7])
+    # col -- the col that was changed (a rank in range [0,...,7])
+    # bef_piece -- specifier for the piece at this position on `start`
+    # aft_piece -- specifier for the piece at this position on `end`
     for row, col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
 
+        # `fP` is a temporary distinction for a pawn which has just performed 
+        # en'passant, so this difference is just a pawn reverting to its correct
+        # ID, not a real move.
         if bef_piece == team*fP and aft_piece == team*P:
             continue
 
@@ -43,48 +58,58 @@ def is_valid_move(start, end, team, verbose=False):
             moves['moveto'].append((row,col))
 
             # If the moving piece is NOT on the team which should be moving
+            # There is absolutely no case where this should occur, so the  
+            # function returns `False` immediately
             if aft_piece * team < 0:
                 if verbose: print("wrong team(1)")
-                #return False
+                return False
         
-        # Piece moved away from this cell
+        # Piece moved away from this space
         elif aft_piece == empty:
             moves['movefrom'].append((row,col))
             
-            # If the moving piece is NOT on the team which should be moving
-            if bef_piece * team < 0:
-                if verbose:
-                    print("wrong team(2)")
-                    print(aft_piece, bef_piece, team)
-                #return False
-
+        # This remaining case is where both `bef_piece` and `aft_piece` are 
+        # non-empty.  This would occur in 
+        # (1) a capture: `bef_piece` is an enemy piece captured by `aft_piece`
         else:
             moves['take'].append((row,col))
             
-            # If one's own piece is taken, or the wrong team acted
-            if aft_piece * team < 0 or bef_piece * team > 0:
+            # There is no case a square should change and the opposing team
+            # ends up on it, so the function returns `False` immediately
+            if aft_piece * team < 0: 
                 if verbose:
-                    print("wrong team(3)")
+                    print("wrong team(2)")
                     print(aft_piece, bef_piece, team)
-                #return False
+                return False
+
     enpassant = is_enpassant(start, end, team, moves)
 
+    # A test to determine if `start` is converted to `end` through a pawn 
+    # promotion
+    # TODO: incorporate this check in the more stringent verification which has
+    # not yet been implemented.  (See the TODO later on in this function)
+    promotion = is_promotion(start, end, team, moves)
+
     # A basic test to verify the number of pieces moved away from squares is equal
-    # to the number which moved to squares
+    # to the number which moved to squares (or this move is an en'passant where 
+    # 2 pieces are removed but only 1 is added back)
     moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movefrom']) or enpassant
-    #if not moves_add_up:
-    #    return False
 
     # Test to verify exactly one move took place 
-    # (Note this fails for castling and en'passant)
+    # Specifically, verifies only one previously-occupied space is now empty, 
+    # OR it is a castling or en'passant.
     only_one_move = len(moves['movefrom']) == 1 or is_castling(start, end, team, moves) or enpassant
-    #if not only_one_move:
-    #    return False
+
+    # TODO
+    # very important to verify each simple move does not change the type of piece
+    # For example, a bishop could move to a knight and this would not raise 
+    # issue in this function
+    # 
+    # Will look something like:
+    # important_check =  is_consistent_move(start, end, team, moves) or promotion
 
     # Test to verify that team appropriately responded to a checking threat.
     not_violating_check = not is_in_check(end, team)
-    #if not_only_one_move:
-    #    return False
 
     if verbose:
         print("moves_add_up", moves_add_up)
@@ -96,16 +121,78 @@ def is_valid_move(start, end, team, verbose=False):
 
     return moves_add_up and only_one_move and not_violating_check
 
+
+def is_promotion(start, end, team, moves, verbose=False):
+    '''
+    INPUT
+    start -- array shaped (64,) containing a board state
+    end -- array shaped (64,) containing a board state 
+    team -- specifier for team, either `Wh` or `Bl`
+    moves -- dictionary encoding details about changes between `start` and `end`
+
+    RETURN
+    * Boolean determining if the difference between `start` and `end` is in part
+    caused by a promotion
+
+    Note, this only comments on the existence of a promotion by `team`.  This 
+    function does not determine whether other moves are also taking place.
+    '''
+    
+    # List of potential spaces a pawn could have left for promotion.  
+    # These satisfy:
+    # (1) This space was vacated this move
+    # (2) The space is one rank away from the opposing team's back rank
+    # (3) The piece ending at this space is a pawn on `team` 
+    candidate_pawns = [piece[1] for piece in moves['movefrom'] 
+            if piece[0] == backrank[-team] - team and start[piece] == team * P]
+    
+    if len(candidate_pawns) == 0:
+        return False
+    
+    # List of potential spaces a pawn could have promoted at.  These satisfy:
+    # (1) Some action took place at this space during this move
+    # (2) The space is on the opposing team's back rank
+    # (3) The piece ending at this space is not a king
+    # 
+    # Note we do not need to verify this piece is on the correct team, since 
+    # that check is already performed in the construction of `moves`
+    candidate_promoted = [piece[1] for piece in moves['moveto'] 
+            if piece[0] == backrank[-team] and piece * team != team * K]
+    
+    # Simply verify there is at least one element in each list with the same 
+    # column
+    for pwn in candidate_pawns:
+        for prm in candidate_promoted:
+            if pwn[1] == prm[1]:
+                return True
+
+    return False
+
+
 def is_castling(start, end, team, moves, verbose=False):
     '''
+    INPUT
+    start -- array shaped (64,) containing a board state
+    end -- array shaped (64,) containing a board state 
+    team -- specifier for team, either `Wh` or `Bl`
+    moves -- dictionary encoding details about changes between `start` and `end`
+
+    RETURN
+    * Boolean determining if the difference between `start` and `end` 
+    `team`
+
     Checks whether team is castling legally.  Does not make any claims about 
     whether other moves are also taking place.
-    TODO: Verify indexing is correct.
+
+    TODO
+    * Verify indexing is correct.
     '''
 
     # Important squares for kingside and queenside castling respectively
     castling_files = ( {'kf':4,'rf':0,'kt':2,'rt':3}, 
                        {'kf':4,'rf':7,'kt':6,'rt':5} )
+
+    # See TODO in `is_valid_move`
     start = start.reshape((8,8))
     end = end.reshape((8,8))
     
@@ -179,6 +266,33 @@ def is_in_check(board, team):
         if board[x,y] == team*K:
             return True
     return False
+
+def possible_moves(board, team): 
+    '''
+    Given a board state and a team specifier, returns a list of 3-tuples
+    describing the possible (end positions of?) moves that can be made.
+    
+    Note: this function does not remove moves which reveal checks illegally,
+    or moves that fail to respond to an active check threat.
+    '''
+    opposing_piece_locs = zip(*np.where(board*team < 0))
+    moves = []
+    for x,y in opposing_piece_locs:
+        if board[x,y] == team*P: 
+            moves += pawn_move(board, x, y, team)
+        elif board[x,y] == team*N: 
+            moves += knight_move(board, x, y, team)
+        elif board[x,y] == team*Q:
+            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
+        elif board[x,y] == team*B:
+            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
+        elif board[x,y] == team*R:
+            moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+    
+    #moves += castling_moves(board, team)
+    #moves += enpassant_moves(board, team)
+    return moves
+
 
 def possible_moves(board, team): 
     '''
@@ -328,9 +442,20 @@ def generate_straight(board, start_row, start_col, direction):
 
 def normal_move(board, row, col, team, sign_pairs):
     '''
+    board - 2d array storing board state
+    row - index of row at which moves start
+    col - index of column at which moves start
+    team - +/- 1 indicating on which team this piece is
+    sign_pairs - list of 2-tuples indicating the types
+                 of moves allowed.  E.g. for a rook, this would be
+                 [ [-1,0], [1,0], [0,-1], [0,1] ] since it cannot move 
+                 diagonally
+
     Bishops, Rooks and Queens all move very similarly, so we use the same function
-    for each of their moves, with only sign_pairs changing to allow either 
+    for each of their moves.  sign_pairs is set to allow either 
     straight moves, diagonal moves, or both.
+
+    Returns a list of three tuples of the form [piece, landing_x, landing_y]
     '''
     moves = []
     this_piece = board[row, col]
@@ -346,3 +471,40 @@ def normal_move(board, row, col, team, sign_pairs):
     # already checks for boundary violations.
     return moves
 
+def retrograde(board, team, nmoves = 1):
+    '''
+    INPUT
+    board -- the board object at the current move
+    team -- team which made the most recent move to arrive at board
+    nmoves -- the number of moves to backtrack.
+
+    RETURN
+    rmoves -- a list of 2-tuples of moves by `team` to reach `board`.
+
+    TODO 
+    * Moves of type (2) as detailed below
+    * Moves of type (3) as detailed below
+    * Extend this to accept nmoves > 1 and build a helper function to do a 
+    single backstep.
+    
+    (1) Find moves into empty squares
+    (2) See how many pieces are missing from opposite team and repeat (1) with taken pieces
+    (3) Special moves like castling/enpassant
+    '''
+
+    # List containing location of every piece on `team`
+    piece_locs = zip(*np.where(board*team > 0))
+    rmoves = []
+    for x,y in piece_locs:
+        elif board[x,y] == team*N: 
+            rmoves += knight_move(board, x, y, team)
+        elif board[x,y] == team*Q:
+            rmoves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
+        elif board[x,y] == team*B:
+            rmoves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
+        elif board[x,y] == team*R:
+            rmoves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+
+    possible_moves = []
+    
+    return moves
