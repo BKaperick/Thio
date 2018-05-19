@@ -34,9 +34,9 @@ def is_valid_move(start, end, team, verbose=False):
 
     diff = start != end
     moves = {
-            'moveto':[],
-            'movefrom':[],
-            'take':[],
+            'moveto':set(),
+            'movefrom':set(),
+            'take':set(),
             }
     
     # This loop builds the `moves` dictionary.
@@ -46,7 +46,7 @@ def is_valid_move(start, end, team, verbose=False):
     # bef_piece -- specifier for the piece at this position on `start`
     # aft_piece -- specifier for the piece at this position on `end`
     for row, col, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
-
+        
         # `fP` is a temporary distinction for a pawn which has just performed 
         # en'passant, so this difference is just a pawn reverting to its correct
         # ID, not a real move.
@@ -55,7 +55,7 @@ def is_valid_move(start, end, team, verbose=False):
 
         # Piece moves to an empty cell
         if bef_piece == empty:
-            moves['moveto'].append((row,col))
+            moves['moveto'].add((row,col))
 
             # If the moving piece is NOT on the team which should be moving
             # There is absolutely no case where this should occur, so the  
@@ -66,13 +66,13 @@ def is_valid_move(start, end, team, verbose=False):
         
         # Piece moved away from this space
         elif aft_piece == empty:
-            moves['movefrom'].append((row,col))
+            moves['movefrom'].add((row,col))
             
         # This remaining case is where both `bef_piece` and `aft_piece` are 
         # non-empty.  This would occur in 
         # (1) a capture: `bef_piece` is an enemy piece captured by `aft_piece`
         else:
-            moves['take'].append((row,col))
+            moves['take'].add((row,col))
             
             # There is no case a square should change and the opposing team
             # ends up on it, so the function returns `False` immediately
@@ -105,8 +105,16 @@ def is_valid_move(start, end, team, verbose=False):
     # For example, a bishop could move to a knight and this would not raise 
     # issue in this function
     # 
-    # Will look something like:
-    # important_check =  is_consistent_move(start, end, team, moves) or promotion
+    for start_spc in moves['movefrom']:
+        piece = start[start_spc]
+        end_spaces = possible_moves(start, team, pieceloc = start_spc)
+        found_matches = (moves['moveto'].union(moves['take'])).intersection(end_spaces)
+        print('mv_t:',moves['moveto'])
+        print('es:',end_spaces)
+        print('fm:',found_matches)
+        if len(found_matches) == 0:
+            return False
+
 
     # Test to verify that team appropriately responded to a checking threat.
     not_violating_check = not is_in_check(end, team)
@@ -267,7 +275,7 @@ def is_in_check(board, team):
             return True
     return False
 
-def possible_moves(board, team): 
+def possible_moves(board, team, pieceloc = None): 
     '''
     Given a board state and a team specifier, returns a list of 3-tuples
     describing the possible (end positions of?) moves that can be made.
@@ -275,50 +283,54 @@ def possible_moves(board, team):
     Note: this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
     '''
-    opposing_piece_locs = zip(*np.where(board*team < 0))
-    moves = []
+    if pieceloc:
+        opposing_piece_locs = {pieceloc}
+    else:
+        opposing_piece_locs = zip(*np.where(board*team < 0))
+    print('opl:',opposing_piece_locs)
+    moves = set()
     for x,y in opposing_piece_locs:
         if board[x,y] == team*P: 
-            moves += pawn_move(board, x, y, team)
+            moves ^= pawn_move(board, x, y, team)
         elif board[x,y] == team*N: 
-            moves += knight_move(board, x, y, team)
+            moves ^= knight_move(board, x, y, team)
         elif board[x,y] == team*Q:
-            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
+            moves ^= normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
         elif board[x,y] == team*B:
-            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
+            moves ^= normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
         elif board[x,y] == team*R:
-            moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+            moves ^= normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
     
     #moves += castling_moves(board, team)
     #moves += enpassant_moves(board, team)
     return moves
 
 
-def possible_moves(board, team): 
-    '''
-    Given a board state and a team specifier, returns a list of 3-tuples
-    describing the possible (end positions of?) moves that can be made.
-    
-    Note: this function does not remove moves which reveal checks illegally,
-    or moves that fail to respond to an active check threat.
-    '''
-    opposing_piece_locs = zip(*np.where(board*team < 0))
-    moves = []
-    for x,y in opposing_piece_locs:
-        if board[x,y] == team*P: 
-            moves += pawn_move(board, x, y, team)
-        elif board[x,y] == team*N: 
-            moves += knight_move(board, x, y, team)
-        elif board[x,y] == team*Q:
-            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
-        elif board[x,y] == team*B:
-            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
-        elif board[x,y] == team*R:
-            moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
-    
-    #moves += castling_moves(board, team)
-    #moves += enpassant_moves(board, team)
-    return moves
+#def possible_moves(board, team): 
+#    '''
+#    Given a board state and a team specifier, returns a list of 3-tuples
+#    describing the possible (end positions of?) moves that can be made.
+#    
+#    Note: this function does not remove moves which reveal checks illegally,
+#    or moves that fail to respond to an active check threat.
+#    '''
+#    opposing_piece_locs = zip(*np.where(board*team < 0))
+#    moves = []
+#    for x,y in opposing_piece_locs:
+#        if board[x,y] == team*P: 
+#            moves += pawn_move(board, x, y, team)
+#        elif board[x,y] == team*N: 
+#            moves += knight_move(board, x, y, team)
+#        elif board[x,y] == team*Q:
+#            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
+#        elif board[x,y] == team*B:
+#            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
+#        elif board[x,y] == team*R:
+#            moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+#    
+#    #moves += castling_moves(board, team)
+#    #moves += enpassant_moves(board, team)
+#    return moves
 
 def castling_moves(board, team):
     '''
@@ -377,8 +389,15 @@ def on_board(board, x,y):
         return board[x,y]
     return None
 
-def move_on_board(move_tuple):
-    return [(p,r,c) for p,r,c in move_tuple if 0 <= r <= 7 and 0 <= c <= 7]
+def moves_on_board(move_tuple):
+    '''
+    INPUT
+    move_tuple -- an array of 3-tuples containing a piece code, a row, and a column.
+    
+    RETURN
+    * Set of tuples with row and column indices within 0,...,7 range.
+    '''
+    return set([(p,r,c) for p,r,c in move_tuple if 0 <= r <= 7 and 0 <= c <= 7])
 
 
 def pawn_move(board, row, col, team):
@@ -386,46 +405,47 @@ def pawn_move(board, row, col, team):
     Returns moves in the form (piece_at_and, end_row, end_col).
     piece_at_end can be different in the case of promotion.
     '''
+    moves = set()
     if board[row+team,col] == empty:
-        moves = [(P, row+team, col)]
+        moves = {(P, row+team, col)}
         
         # Handle double-move if have not moved previously.
         if board[row+2*team,col] == empty and row == backrank[team] + team:
-            moves.append((row+2*team, col))
+            moves.add((row+2*team, col))
     
     # Attacks
     candidates = {(row+team,col+1), (row+team,col-1)}
     for cand in candidates:
-        moves.append([P, row+team,col+1])
-        moves.append([P, row+team,col-1])
+        moves.add((P, row+team,col+1))
+        moves.add((P, row+team,col-1))
 
     # Handle promotions
     if row == backrank[-team] - team:
         for p_code in piece.values():
             if p_code != K:
-                moves.append(p_code, row+team, col)
-
+                moves.add((p_code, row+team, col))
+    print('pm: ',moves)
     return moves_on_board(moves)
 
 def knight_move(board, row, col, team):
-    moves = []
+    moves = set()
     for x in [-2,-1,1,2]:
         for y in [-2,-1,1,2]:
             if abs(x) == abs(y): continue
             if board[row+x,col+y]*team <= 0:
-                moves.append(N,row+x,col+y)
+                moves.add((N,row+x,col+y))
     return moves_on_board(moves)
 
 def king_move(board, row, col, team):
     '''
     Note, this does not include castling nor does it check for check violations.
     '''
-    moves = []
+    moves = set()
     for x in [-1,0,1]:
         for y in [-1,0,1]:
             if x==0 and y==0: continue
             if board[row+x,col+y]*team <= 0:
-                moves.append(K,row+x,col+y)
+                moves.add((K,row+x,col+y))
     return moves_on_board(moves)
 
 def generate_straight(board, start_row, start_col, direction):
@@ -442,30 +462,31 @@ def generate_straight(board, start_row, start_col, direction):
 
 def normal_move(board, row, col, team, sign_pairs):
     '''
-    board - 2d array storing board state
-    row - index of row at which moves start
-    col - index of column at which moves start
-    team - +/- 1 indicating on which team this piece is
-    sign_pairs - list of 2-tuples indicating the types
-                 of moves allowed.  E.g. for a rook, this would be
-                 [ [-1,0], [1,0], [0,-1], [0,1] ] since it cannot move 
-                 diagonally
+    INPUT
+    board -- 2d array storing board state
+    row -- index of row at which moves start
+    col -- index of column at which moves start
+    team -- +/- 1 indicating on which team this piece is
+    sign_pairs -- list of 2-tuples indicating the types of moves allowed.  E.g. 
+    for a rook, this would be [ [-1,0], [1,0], [0,-1], [0,1] ] since it cannot 
+    move diagonally
 
     Bishops, Rooks and Queens all move very similarly, so we use the same function
     for each of their moves.  sign_pairs is set to allow either 
     straight moves, diagonal moves, or both.
-
-    Returns a list of three tuples of the form [piece, landing_x, landing_y]
+    
+    RETURN
+    moves -- set of three tuples of the form [piece, landing_x, landing_y]
     '''
-    moves = []
+    moves = set()
     this_piece = board[row, col]
     for direction in sign_pairs:
         for piece,x,y in generate_straight(board, row, col, direction):
             if piece == empty:
-                moves.append(this_piece, x, y)
+                moves.add((this_piece, x, y))
             else:
                 if piece*team < 0:
-                    moves.append(this_piece, x, y)
+                    moves.add((this_piece, x, y))
                 break
     # Note, we don't need to use moves_on_board() since generate_straight
     # already checks for boundary violations.
@@ -496,7 +517,7 @@ def retrograde(board, team, nmoves = 1):
     piece_locs = zip(*np.where(board*team > 0))
     rmoves = []
     for x,y in piece_locs:
-        elif board[x,y] == team*N: 
+        if board[x,y] == team*N: 
             rmoves += knight_move(board, x, y, team)
         elif board[x,y] == team*Q:
             rmoves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
