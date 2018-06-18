@@ -493,12 +493,13 @@ def only_correct_games(fname, max_count = 0, verbose=False):
     YIELD
     The next game from the PGN file which can be parsed correctly and 
     completely by Game.runGame().
-
-    Specifically, this function checks that Game.runGame()
+    
+    NOTE
+    * specifically, this function checks that Game.runGame()
     completes without an index error, so it is possible there is still some
     amount of incorrectness in the Game code.
 
-    Note that the PGN files that I have been using to test this code 
+    * the PGN files that I have been using to test this code 
     occasionally have typos in the game itself, and so failures to parse all
     games in `fname` may be for that reason.  
     '''

@@ -105,9 +105,14 @@ def is_valid_move(start, end, team, verbose=False):
     # For example, a bishop could move to a knight and this would not raise 
     # issue in this function
     # 
+
+    # Iterate over every space which a piece vacates in this move
     for start_spc in moves['movefrom']:
+        # Identify piece which vacates
         piece = start[start_spc]
+        # Set of 3-tuples describing all possible moves from start_spc
         end_spaces = possible_moves(start, team, pieceloc = start_spc)
+        # Set of 3-tuples 
         found_matches = (moves['moveto'].union(moves['take'])).intersection(end_spaces)
         print('mv_t:',moves['moveto'])
         print('es:',end_spaces)
@@ -277,10 +282,19 @@ def is_in_check(board, team):
 
 def possible_moves(board, team, pieceloc = None): 
     '''
-    Given a board state and a team specifier, returns a list of 3-tuples
-    describing the possible (end positions of?) moves that can be made.
-    
-    Note: this function does not remove moves which reveal checks illegally,
+    INPUT
+    board -- array shaped (64,) containing a board state
+    team -- specifier for team, either `Wh` or `Bl`
+    pieceloc -- if left `None` then all possible moves from all pieces on 
+        `board` on the specified `team` are computed.  Else, only `pieceloc`'s 
+        moves are computed
+
+    RETURN
+    moves -- a set of 3-tuples of the form (piece-identifier-at-end-of-move, 
+        end-row, end-col)
+
+    NOTE 
+    * this function does not remove moves which reveal checks illegally,
     or moves that fail to respond to an active check threat.
     '''
     if pieceloc:

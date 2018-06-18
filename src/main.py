@@ -33,8 +33,8 @@ if __name__ == "__main__":
     total = 0
     
     for start, end, team, index in gen_pairs(games):
+        print(index)
         result = is_valid_move(start, end, team, verbose=0)
-
         if not result:
             print("failed: ", index)
             print_board(start)
