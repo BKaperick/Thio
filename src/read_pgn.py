@@ -22,7 +22,15 @@ O = 7
 empty = 0
 
 piece = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
-
+piece_to_string = {
+        fP: '(f)Pawn',
+        P: 'Pawn',
+        R: 'Rook',
+        N: 'Knight',
+        B: 'Bishop',
+        Q: 'Queen',
+        K: 'King',
+        empty: 'Empty'}
 # a:1, ..., h:8
 coord = {chr(i):i-96 for i in range(97,105)}
 
@@ -63,11 +71,16 @@ class Game:
 
     def runGame(self, savestates=True, verbose=0):
         '''
+        INPUT
+        savestates -- if is True, the board is deep-copied after each board change.
+        verbose -- if is True, the board is printed after each black move.
+        
         Iterates over the moves pulled from PGN file and plays the game described, 
         printing along the way.
 
-        If savestates is True, the board is deep-copied after each board change.
-        If verbose is True, the board is printed after each black move.
+        RETURN
+        states -- if savestates is True, an array of board states detailing the 
+            history of the game, else None
         '''
         states = [self.board.copy()]
         startB, endB = '', ''
@@ -418,10 +431,26 @@ class Game:
 
 
 def diffs(board1, board2):
+    '''
+    INPUT
+    board1 -- a 2d array board state
+    board2 -- a 2d array board state
+
+    The differences between the two boards are calculated.
+    Importantly, fresh pawns converting back to normal pawns are not included
+    in the array of differences
+
+    RETURN
+    final_indices -- an array with two arrays [row indices, col indices]
+        pointing to differences between the two inputted boards
+    '''
     diff = board1 != board2
     indices = np.where(diff)
     final_indices = [[], []]
     for x,y in zip(*indices):
+        # `fP` is a temporary distinction for a pawn which has just performed 
+        # a two space jump and can be en'passanted, so this difference is just 
+        # a pawn reverting to its correct ID, not a real move.
         if abs(board1[x,y]) == fP and abs(board2[x,y]) == P:
             continue
         final_indices[0].append(x)

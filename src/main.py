@@ -1,6 +1,7 @@
 from read_pgn import *
 from chess import *
 from itertools import chain
+from sys import argv
 
 def gen_pairs(games):
     '''
@@ -21,20 +22,21 @@ def gen_pairs(games):
             team *= -1
 
 if __name__ == "__main__":
-    games = only_correct_games(fname, verbose=0)
+    games = only_correct_games(fname, max_count=1, verbose=2)
     
     #states = []
     #for game in games:
     #    states += game.runGame()
 
     #chain([games[ind].runGame() for ind in game_indices])
-
+    verbosity = argv[1] if len(argv) > 1 else 0
     correct = 0
     total = 0
     
     for start, end, team, index in gen_pairs(games):
-        print(index)
-        result = is_valid_move(start, end, team, verbose=0)
+        print("MOVE: ", index)
+        result = is_valid_move(start, end, team, verbose=int(verbosity))
+        print("result: ", result)
         if not result:
             print("failed: ", index)
             print_board(start)
