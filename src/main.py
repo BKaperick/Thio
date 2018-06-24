@@ -3,7 +3,7 @@ from chess import *
 from itertools import chain
 from sys import argv
 
-def gen_pairs(games):
+def gen_pairs(games, start_count = 0):
     '''
     INPUT
     games -- a list of game states
@@ -12,7 +12,7 @@ def gen_pairs(games):
     state -- 
     '''
     for gi, game in enumerate(games):
-        print("game number: ", gi)
+        print("game number: ", gi + start_count)
         states = game.runGame(verbose=0)
         team = 1
         for i,state in enumerate(states[:-1]):
@@ -22,21 +22,21 @@ def gen_pairs(games):
             team *= -1
 
 if __name__ == "__main__":
-    games = only_correct_games(fname, max_count=1, verbose=2)
+    verbosity = int(argv[1]) if len(argv) > 1 else 0
+    games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)
     
     #states = []
     #for game in games:
     #    states += game.runGame()
 
     #chain([games[ind].runGame() for ind in game_indices])
-    verbosity = argv[1] if len(argv) > 1 else 0
     correct = 0
     total = 0
     
     for start, end, team, index in gen_pairs(games):
-        print("MOVE: ", index)
-        result = is_valid_move(start, end, team, verbose=int(verbosity))
-        print("result: ", result)
+        if verbosity:
+            print("MOVE: ", index)
+        result = is_valid_move(start, end, team, verbose=verbosity)
         if not result:
             print("failed: ", index)
             print_board(start)

@@ -1,6 +1,6 @@
 
 # ./chess.py
-## is_valid_move(start, end, team, verbose=False)
+## is_valid_move(start, end, team, verbose=0)
 >     INPUT
 >     start -- array shaped (64,) containing a board state
 >     end -- array shaped (64,) containing a board state 
@@ -12,7 +12,7 @@
 >     * Decide whether (64,) or (8,8) shape is preferable.  Consider efficiency 
 >     of reshape().  This is probably not a very important issue.
 
-## is_promotion(start, end, team, moves, verbose=False)
+## is_promotion(start, end, team, moves, verbose=0)
 >     INPUT
 >     start -- array shaped (64,) containing a board state
 >     end -- array shaped (64,) containing a board state 
@@ -21,34 +21,55 @@
 >     RETURN
 >     * Boolean determining if the difference between `start` and `end` is in part
 >     caused by a promotion
->     Note, this only comments on the existence of a promotion by `team`.  This 
+>     NOTE
+>     * this only comments on the existence of a promotion by `team`.  This 
 >     function does not determine whether other moves are also taking place.
+>     However, this check is already performed in `is_valid_move` prior to
+>     entering this function
 
-## is_castling(start, end, team, moves, verbose=False)
+## is_castling(start, end, team, moves, verbose=0)
 >     INPUT
 >     start -- array shaped (64,) containing a board state
 >     end -- array shaped (64,) containing a board state 
 >     team -- specifier for team, either `Wh` or `Bl`
 >     moves -- dictionary encoding details about changes between `start` and `end`
+>     Checks whether `team` is castling legally.  Does not make any claims about 
+>     whether other moves are also taking place.
 >     RETURN
 >     * Boolean determining if the difference between `start` and `end` 
 >     `team`
->     Checks whether team is castling legally.  Does not make any claims about 
->     whether other moves are also taking place.
 >     TODO
 >     * Verify indexing is correct.
 
-## is_enpassant(start, end, team, moves)
->     Determines whether start can be transformed into end by exactly one 
->     en'passant move by the specified team.
+## is_enpassant(start, end, team, moves, verbose=0)
+>     INPUT
+>     start -- 2d array storing board state before move
+>     end -- 2d array storing board state after move
+>     team -- +/- 1 indicating on which team this piece is
+>     moves -- dictionary from `is_valid_move` indicating the types of move(s) 
+>         made between `start` and `end`
+>     verbose -- nonnegative integer indicating level of verbosity for debugging
+>     RETURN 
+>     move_happened -- a boolean determining whether en passant has taken place
+>         by `team`
+>     NOTE
+>     * this function does not check whether other moves have occurred also
 
 ## is_in_check(board, team)
 >     Given the board state, determines whether team's king is threatened.
 
 ## possible_moves(board, team, pieceloc = None)
->     Given a board state and a team specifier, returns a list of 3-tuples
->     describing the possible (end positions of?) moves that can be made.
->     Note: this function does not remove moves which reveal checks illegally,
+>     INPUT
+>     board -- array shaped (64,) containing a board state
+>     team -- specifier for team, either `Wh` or `Bl`
+>     pieceloc -- if left `None` then all possible moves from all pieces on 
+>         `board` on the specified `team` are computed.  Else, only `pieceloc`'s 
+>         moves are computed
+>     RETURN
+>     moves -- a set of 3-tuples of the form (piece-identifier-at-end-of-move, 
+>         end-row, end-col) denoting the spaces `pieceloc` piece/team can reach
+>     NOTE 
+>     * this function does not remove moves which reveal checks illegally,
 >     or moves that fail to respond to an active check threat.
 
 ## castling_moves(board, team)
@@ -57,13 +78,22 @@
 >     Note: This function does not check whether the castling violates check.
 
 ## enpassant_moves(board, team)
->     Returns 3-tuples flagged 'pass left' or 'pass right' in the first position
->     for each possible en'passant move in this board state by this team. 
->     Note: This function does not check whether the castling violates check.
+>     INPUT
+>     board -- 2d array storing board state
+>     team -- +/- 1 indicating on which team this piece is
+>     RETURN 
+>     * 3-tuples flagged 'pass left' or 'pass right' in the first position
+>     for each possible en'passant move in this board state by this team
 
-## on_board(board, x,y)
->     x is a file (column) on [0,7]
->     y is a rank (row) on [0,7]
+## move_to_string(piece, row, col,justloc=0)
+## on_board(board, row, col)
+>     INPUT
+>     board -- 2d array storing board state
+>     row -- a file (column) on [0,7]
+>     col -- a rank (row) on [0,7]
+>     RETURN
+>     The piece on `board` at the specified row and column, or `None` if the 
+>     coordinates are invalid.
 
 ## moves_on_board(move_tuple)
 >     INPUT
@@ -72,16 +102,43 @@
 >     * Set of tuples with row and column indices within 0,...,7 range.
 
 ## pawn_move(board, row, col, team)
->     Returns moves in the form (piece_at_and, end_row, end_col).
->     piece_at_end can be different in the case of promotion.
+>     INPUT
+>     board -- 2d array storing board state
+>     row -- index of row at which moves start
+>     col -- index of column at which moves start
+>     team -- +/- 1 indicating on which team this piece is
+>     RETURN
+>     moves -- in the form (piece_at_end, end_row, end_col).
+>         piece_at_end can be different in the case of promotion.
 
 ## knight_move(board, row, col, team)
+>     INPUT
+>     board -- 2d array storing board state
+>     row -- index of row at which moves start
+>     col -- index of column at which moves start
+>     team -- +/- 1 indicating on which team this piece is
+>     RETURN
+>     moves -- in the form (N, end_row, end_col) of possible ending squares
+
 ## king_move(board, row, col, team)
->     Note, this does not include castling nor does it check for check violations.
+>     INPUT
+>     board -- 2d array storing board state
+>     row -- index of row at which moves start
+>     col -- index of column at which moves start
+>     team -- +/- 1 indicating on which team this piece is
+>     RETURN
+>     moves -- in the form (K, end_row, end_col) of possible ending squares
+>     NOTE
+>     * this does not include castling nor does it check for check violations.
 
 ## generate_straight(board, start_row, start_col, direction)
->     Generator for the successive row,column and piece along a straight line
->     indicated by the direction 2-tuple.
+>     INPUT
+>     board -- 2d array storing board state
+>     start_row -- index of row at which moves start
+>     start_col -- index of column at which moves start
+>     direction -- 2-tuple (+/- 1, +/- 1) indicating the direction of generation
+>     YIELD
+>     * 3-tuple of the piece, row, and col of next space in sequence
 
 ## normal_move(board, row, col, team, sign_pairs)
 >     INPUT
@@ -90,10 +147,10 @@
 >     col -- index of column at which moves start
 >     team -- +/- 1 indicating on which team this piece is
 >     sign_pairs -- list of 2-tuples indicating the types of moves allowed.  E.g. 
->     for a rook, this would be [ [-1,0], [1,0], [0,-1], [0,1] ] since it cannot 
->     move diagonally
->     Bishops, Rooks and Queens all move very similarly, so we use the same function
->     for each of their moves.  sign_pairs is set to allow either 
+>         for a rook, this would be [ [-1,0], [1,0], [0,-1], [0,1] ] since it 
+>             cannot move diagonally
+>     Bishops, Rooks and Queens all move very similarly, so we use the same 
+>     function for each of their moves.  sign_pairs is set to allow either 
 >     straight moves, diagonal moves, or both.
 >     RETURN
 >     moves -- set of three tuples of the form [piece, landing_x, landing_y]
@@ -132,10 +189,14 @@
 >         indexed from 0-7
 
 ###     runGame(self, savestates=True, verbose=0)
+>         INPUT
+>         savestates -- if is True, the board is deep-copied after each board change.
+>         verbose -- if is True, the board is printed after each black move.
 >         Iterates over the moves pulled from PGN file and plays the game described, 
 >         printing along the way.
->         If savestates is True, the board is deep-copied after each board change.
->         If verbose is True, the board is printed after each black move.
+>         RETURN
+>         states -- if savestates is True, an array of board states detailing the 
+>             history of the game, else None
 
 ###     checkStraights(self, end, team, piece=R)
 >         Given an end coordinate on range [1,8] and a team/piece, returns a list 
@@ -181,17 +242,28 @@
 >         distinction, the board gets updated accordingly.
 
 ## diffs(board1, board2)
+>     INPUT
+>     board1 -- a 2d array board state
+>     board2 -- a 2d array board state
+>     The differences between the two boards are calculated.
+>     Importantly, fresh pawns converting back to normal pawns are not included
+>     in the array of differences
+>     RETURN
+>     final_indices -- an array with two arrays [row indices, col indices]
+>         pointing to differences between the two inputted boards
+
 ## print_board(board)
     Print board in a human-readable format.
-## parsePGN(fname, max_count = 0, verbose=False)
+## parsePGN(fname, start_count = 0, max_count = 0, verbose=False)
 >     INPUT
 >     fname -- string name of PGN file
+>     start_count -- first game to read in
 >     max_count -- maximum number of games to read in
 >     verbose -- boolean to print debugging info
 >     RETURN
 >     games -- list of game objects read from file
 
-## only_correct_games(fname, max_count = 0, verbose=False)
+## only_correct_games(fname, start_count = 0, max_count = 0, verbose=False)
 >     INPUT
 >     fname -- string name of PGN file
 >     max_count -- maximum number of games to be read from file
@@ -199,16 +271,17 @@
 >     YIELD
 >     The next game from the PGN file which can be parsed correctly and 
 >     completely by Game.runGame().
->     Specifically, this function checks that Game.runGame()
+>     NOTE
+>     * specifically, this function checks that Game.runGame()
 >     completes without an index error, so it is possible there is still some
 >     amount of incorrectness in the Game code.
->     Note that the PGN files that I have been using to test this code 
+>     * the PGN files that I have been using to test this code 
 >     occasionally have typos in the game itself, and so failures to parse all
 >     games in `fname` may be for that reason.  
 
 
 # ./main.py
-## gen_pairs(games)
+## gen_pairs(games, start_count = 0)
 >     INPUT
 >     games -- a list of game states
 >     YIELD

@@ -81,34 +81,34 @@ def is_valid_move(start, end, team, verbose=0):
                     print("wrong team(2)")
                     print(aft_piece, bef_piece, team)
                 return False
+    if verbose:
+        print("movefrom: ", [move_to_string(*m,0) for m in moves["movefrom"]])
+        print("moveto: ", [move_to_string(*m,0) for m in moves["moveto"]])
+        print("take: ", [move_to_string(*m,0) for m in moves["take"]])
+    
+    # Test to verify that team appropriately responded to a checking threat.
+    not_violating_check = not is_in_check(end, team, verbose)
+    if not not_violating_check:
+        if verbose: print("violating check")
+        return False
 
     enpassant = is_enpassant(start, end, team, moves, verbose)
     # Verifies no other moves took place
     only_enpassant = enpassant and len(diff[0]) == 3
 
-    if enpassant and not only_enpassant:
+    if enpassant:
+        if only_enpassant:
+            return True
         if verbose: print("en passant and another move")
         return False
 
-    # A test to determine if `start` is converted to `end` through a pawn 
-    # promotion
-    # TODO: incorporate this check in the more stringent verification which has
-    # not yet been implemented.  (See the TODO later on in this function)
-    promotion = is_promotion(start, end, team, moves)
-
-    # A basic test to verify the number of pieces moved away from squares is equal
-    # to the number which moved to squares (or this move is an en'passant where 
-    # 2 pieces are removed but only 1 is added back)
-    moves_add_up = len(moves['moveto']) + len(moves['take']) == len(moves['movefrom']) or enpassant
-    if not moves_add_up:
-        if verbose: print("Moves do not add up")
-        return False
-    
     castling = is_castling(start, end, team, moves, verbose=verbose)
     # Verifies no other moves took place
     only_castling = castling and len(diff[0]) == 4
     
-    if castling and not only_castling:
+    if castling:
+        if only_castling:
+            return True
         if verbose: print("castling and another move")
         return False
 
@@ -117,60 +117,43 @@ def is_valid_move(start, end, team, verbose=0):
     # OR it is a castling or en'passant.
     only_one_move = (
         (len(moves['movefrom']) == 1 and
-        len(moves['moveto']) + len(moves['take']) == 1) or
-        only_castling or
-        only_enpassant)
+        len(moves['moveto']) + len(moves['take']) == 1))
     
     if not only_one_move:
         if verbose: print("not only_one_move")
         return False
-
-    # TODO
-    # very important to verify each simple move does not change the type of piece
-    # For example, a bishop could move to a knight and this would not raise 
-    # issue in this function
-    # 
-    if verbose:
-        print("only castling?", only_castling)
-        print("only en passant?", only_enpassant)
-        print("only one move?", only_one_move)
     
-    if not (only_castling or only_enpassant):
-        # Iterate over every space which a piece vacates in this move
-        for p,x,y in moves['movefrom']:
-            start_spc = (x,y)
-            # Identify piece which vacates
-            piece = on_board(start, x, y)
-            # Set of 3-tuples describing all possible moves from start_spc
-            end_spaces = possible_moves(start, team, pieceloc = start_spc)
-            end_spaces = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in end_spaces}
-            # Set of 3-tuples 
-            tmp = moves['moveto'].union(moves['take'])
-            tmp = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in tmp}
-            found_matches = tmp.intersection(end_spaces)
+    # A test to determine if `start` is converted to `end` through a pawn 
+    # promotion
+    promotion = is_promotion(start, end, team, moves)
+    if promotion:
+        return True
+
+    # Iterate over every space which a piece vacates in this move
+    for p,x,y in moves['movefrom']:
+        start_spc = (x,y)
+        # Identify piece which vacates
+        piece = on_board(start, x, y)
+        # Set of 3-tuples describing all possible moves from start_spc
+        end_spaces = possible_moves(start, team, pieceloc = start_spc)
+        end_spaces = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in end_spaces}
+        # Set of 3-tuples 
+        tmp = moves['moveto'].union(moves['take'])
+        tmp = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in tmp}
+        found_matches = tmp.intersection(end_spaces)
+        
+        if verbose:
+            print("tmp: ", [move_to_string(*m,0) for m in tmp])
+            print("possible: ",[move_to_string(*m,0) for m in end_spaces])
+            print(move_to_string(p,x,y) + " can move to " + ", ".join([move_to_string(*z,1) for z in found_matches]))
             
-            if verbose:
-                print(moves)
-                print("movefrom: ", [move_to_string(*m,1) for m in moves["movefrom"]])
-                print("moveto: ", [move_to_string(*m,1) for m in moves["moveto"]])
-                print("take: ", [move_to_string(*m,1) for m in moves["take"]])
-
-                print("tmp: ", [move_to_string(*m,0) for m in tmp])
-                print("possible: ",[move_to_string(*m,0) for m in end_spaces])
-                print(move_to_string(p,x,y) + " can move to " + ", ".join([move_to_string(*z,1) for z in found_matches]))
-                
-            if len(found_matches) == 0:
-                return False
+        if len(found_matches) == 0:
+            return False
 
 
-    # Test to verify that team appropriately responded to a checking threat.
-    not_violating_check = not is_in_check(end, team)
-    if verbose:
-        print("not_violating_check?", not_violating_check)
-    return not_violating_check
+    return True
 
-
-def is_promotion(start, end, team, moves, verbose=False):
+def is_promotion(start, end, team, moves, verbose=0):
     '''
     INPUT
     start -- array shaped (64,) containing a board state
@@ -182,39 +165,47 @@ def is_promotion(start, end, team, moves, verbose=False):
     * Boolean determining if the difference between `start` and `end` is in part
     caused by a promotion
 
-    Note, this only comments on the existence of a promotion by `team`.  This 
+    NOTE
+    * this only comments on the existence of a promotion by `team`.  This 
     function does not determine whether other moves are also taking place.
+    However, this check is already performed in `is_valid_move` prior to
+    entering this function
+
     '''
-    
+    if verbose > 1:
+        print("is_promotion:")
+        print(cand_pwn)
+        print(cand_pwn[1] == backrank[-team] - team)
+        print(on_board(start,cand_pwn[1],cand_pwn[2]) == team * P)
+        if len(moves['take']) > 0:
+            print(next(iter(moves['take'])))
+            print(abs(cand_pwn[2] - cand_prom[2]) == 1)
+        else:
+            print(next(iter(moves['moveto'])))
+            print(not cand_pwn[2] != cand_prom[2])
     # List of potential spaces a pawn could have left for promotion.  
     # These satisfy:
     # (1) This space was vacated this move
     # (2) The space is one rank away from the opposing team's back rank
     # (3) The piece ending at this space is a pawn on `team` 
-    candidate_pawns = [piece[2] for piece in moves['movefrom'] 
-            if piece[1] == backrank[-team] - team and start[piece[1:2]] == team * P]
-    
-    if len(candidate_pawns) == 0:
+    cand_pwn = next(iter(moves['movefrom']))
+    if not (cand_pwn[1] == backrank[-team] - team and
+            on_board(start,cand_pwn[1],cand_pwn[2]) == team * P):
         return False
-    
-    # List of potential spaces a pawn could have promoted at.  These satisfy:
+    # The promoted piece must satisfy:
+    # (0) One the correct column
     # (1) Some action took place at this space during this move
     # (2) The space is on the opposing team's back rank
     # (3) The piece ending at this space is not a king
-    # 
-    # Note we do not need to verify this piece is on the correct team, since 
-    # that check is already performed in the construction of `moves`
-    candidate_promoted = [piece[1] for piece in moves['moveto'] 
-            if piece[0] == backrank[-team] and piece * team != team * K]
-    
-    # Simply verify there is at least one element in each list with the same 
-    # column
-    for pwn in candidate_pawns:
-        for prm in candidate_promoted:
-            if pwn[1] == prm[1]:
-                return True
-
-    return False
+    if len(moves['moveto']) == 1:
+        cand_prom = next(iter(moves['moveto']))
+        if cand_pwn[2] != cand_prom[2]:
+            return False
+    else:
+        cand_prom = next(iter(moves['take']))
+        if abs(cand_pwn[2] - cand_prom[2]) != 1:
+            return False
+    return cand_prom[1] == backrank[-team] and cand_prom[0] != K
 
 
 def is_castling(start, end, team, moves, verbose=0):
@@ -296,26 +287,34 @@ def is_enpassant(start, end, team, moves, verbose=0):
     move_happened = False
     for passant in passes:
         if passant[0] == 'pass left':
-            direction = team
+            direction = 1#team
         elif passant[0] == 'pass right':
-            direction = -team
-        # some are fP and some are P
-        move_happened = not move_happened and ...
-        (P,passant[1],passant[2]) in moves['moveto'] and ...
-        (fP,passant[1]-team, passant[2]) in moves['movefrom'] and ...
-        (P,passant[1]-team, passant[2]+direction) in moves['movefrom']
-    
+            direction = -1#team
+        if verbose > 1:
+            print((P,passant[1],passant[2]) in moves['moveto'])
+            print((fP,passant[1]-team, passant[2]) in moves['movefrom'])
+            print(team,direction)
+            print((P,passant[1]-team, passant[2]+direction) in moves['movefrom'])
+        
+        move_happened = (not move_happened and
+        (P,passant[1],passant[2]) in moves['moveto'] and
+        (fP,passant[1]-team, passant[2]) in moves['movefrom'] and
+        (P,passant[1]-team, passant[2]+direction) in moves['movefrom'])
+    if verbose>1:
+        print("en passant returning ", move_happened)
     return move_happened
 
-def is_in_check(board, team):
+def is_in_check(board, team, verbose=0):
     '''
     Given the board state, determines whether team's king is threatened.
     '''
     # List of all moves the opponent can make.
     threats = possible_moves(board, -team)
+    if verbose > -1:
+        print([move_to_string(*th) for th in threats])
 
     for flag,x,y in threats:
-        if on_board(board, x, y) == team*K:
+        if on_board(board, x, y) == K:
             return True
     return False
 
@@ -339,7 +338,7 @@ def possible_moves(board, team, pieceloc = None):
     if pieceloc:
         piece_locs = {pieceloc}
     else:
-        piece_locs = zip(*np.where(board*team < 0))
+        piece_locs = zip(*np.where(board*team > 0))
     moves = set()
     for x,y in piece_locs:
         if on_board(board, x, y) == team*P or on_board(board, x, y) == team*fP: 
@@ -352,6 +351,8 @@ def possible_moves(board, team, pieceloc = None):
             moves ^= normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
         elif on_board(board, x, y) == team*R:
             moves ^= normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+        elif on_board(board, x, y) == team*K:
+            moves ^= king_move(board, x, y, team)
     
     #moves += castling_moves(board, team)
     #moves += enpassant_moves(board, team)
@@ -432,6 +433,7 @@ def enpassant_moves(board, team):
             moves.append(('pass left', fourth_rank+team, y))
         if on_board(board, fourth_rank, y-1) == team*P:
             moves.append(('pass right', fourth_rank+team, y))
+            #import pdb; pdb.set_trace()
     return moves
 
 

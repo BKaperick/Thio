@@ -10,7 +10,8 @@ Wh = 1
 Bl = -1
 P = 1
 
-#fP is a "fresh pawn" (one that has just moved two spaces and can be en'passanted next turn.
+#fP is a "fresh pawn" (one that has just moved two spaces and can be 
+# en'passanted next turn.
 fP = 8
 R = 2
 N = 3
@@ -30,6 +31,7 @@ piece_to_string = {
         B: 'Bishop',
         Q: 'Queen',
         K: 'King',
+        C: '<Castling>',
         empty: 'Empty'}
 # a:1, ..., h:8
 coord = {chr(i):i-96 for i in range(97,105)}
@@ -451,7 +453,7 @@ def diffs(board1, board2):
         # `fP` is a temporary distinction for a pawn which has just performed 
         # a two space jump and can be en'passanted, so this difference is just 
         # a pawn reverting to its correct ID, not a real move.
-        if abs(board1[x,y]) == fP and abs(board2[x,y]) == P:
+        if abs(board1[x,y]) == fP and abs(board2[x,y]) == P and board1[x,y]*board2[x,y] > 0:
             continue
         final_indices[0].append(x)
         final_indices[1].append(y)
@@ -471,10 +473,11 @@ def print_board(board):
         print(i+1,r)
     print('\n')
 
-def parsePGN(fname, max_count = 0, verbose=False):
+def parsePGN(fname, start_count = 0, max_count = 0, verbose=False):
     '''
     INPUT
     fname -- string name of PGN file
+    start_count -- first game to read in
     max_count -- maximum number of games to read in
     verbose -- boolean to print debugging info
 
@@ -484,25 +487,29 @@ def parsePGN(fname, max_count = 0, verbose=False):
     games = []
     inMoves = False
     moves = ''
+    game_count = -1
     with open(fname) as pgn:
         for line in pgn.readlines():
             if verbose: print(line, end='')
             
             #Start of a game
             if line[0] == '1':
+                game_count += 1
                 inMoves = True
              
             #End of a game
             elif inMoves and line == '\n':
                 moves = moves.split()
-
-                #Create game object from moves
-                games.append(Game(moves[-1], moves[:-1]))
+                
+                if game_count >= start_count:
+                    #Create game object from moves
+                    games.append(Game(moves[-1], moves[:-1]))
+                
                 inMoves = False
                 moves = ''
                 
                 # Read at most max_count games
-                if len(games) == max_count:
+                if len(games) == start_count + max_count:
                     break
                 
             #Middle of a game
@@ -512,7 +519,7 @@ def parsePGN(fname, max_count = 0, verbose=False):
     
     return games
 
-def only_correct_games(fname, max_count = 0, verbose=False):
+def only_correct_games(fname, start_count = 0, max_count = 0, verbose=False):
     '''
     INPUT
     fname -- string name of PGN file
@@ -534,8 +541,8 @@ def only_correct_games(fname, max_count = 0, verbose=False):
     '''
     # The error check code calls runGame() which can only be called once per
     # game, so they must be regenerated.
-    games = parsePGN(fname, max_count=max_count, verbose=verbose)
-    fresh_games = parsePGN(fname, max_count=max_count, verbose=verbose)
+    games = parsePGN(fname, start_count = start_count, max_count=max_count, verbose=verbose)
+    fresh_games = parsePGN(fname, start_count = start_count, max_count=max_count, verbose=verbose)
     
     # Identifies games which run without error
     correct_game_indices = []
