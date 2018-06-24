@@ -301,9 +301,9 @@ def is_enpassant(start, end, team, moves, verbose=0):
             direction = -team
         # some are fP and some are P
         move_happened = not move_happened and ...
-        (fP,passant[1],passant[2]) in moves['moveto'] and ...
-        (P,passant[1], passant[2]-team) in moves['movefrom'] and ...
-        (P,passant[1]+direction, passant[2]-team) in moves['movefrom']
+        (P,passant[1],passant[2]) in moves['moveto'] and ...
+        (fP,passant[1]-team, passant[2]) in moves['movefrom'] and ...
+        (P,passant[1]-team, passant[2]+direction) in moves['movefrom']
     
     return move_happened
 
@@ -415,9 +415,6 @@ def enpassant_moves(board, team):
     RETURN 
     * 3-tuples flagged 'pass left' or 'pass right' in the first position
     for each possible en'passant move in this board state by this team
-
-    NOTE
-    * this function does not check whether the castling violates check.
     '''
     moves = []
 
@@ -431,10 +428,10 @@ def enpassant_moves(board, team):
 
         # If one of team's pawns is in the position to en'passant a fresh pawn,
         # add it to list.
-        if on_board(board, y+1, fourth_rank) == team*P:
-            moves.append(('pass left', y, fourth_rank+team))
-        if on_board(board, y-1, fourth_rank) == team*P:
-            moves.append(('pass right', y, fourth_rank+team))
+        if on_board(board, fourth_rank, y+1) == team*P:
+            moves.append(('pass left', fourth_rank+team, y))
+        if on_board(board, fourth_rank, y-1) == team*P:
+            moves.append(('pass right', fourth_rank+team, y))
     return moves
 
 
