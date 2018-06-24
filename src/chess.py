@@ -310,7 +310,7 @@ def is_in_check(board, team, verbose=0):
     '''
     # List of all moves the opponent can make.
     threats = possible_moves(board, -team)
-    if verbose > -1:
+    if verbose > 1:
         print([move_to_string(*th) for th in threats])
 
     for flag,x,y in threats:
@@ -502,13 +502,21 @@ def pawn_move(board, row, col, team):
     for cand in candidates:
         pieceval = on_board(board, cand[0], cand[1])
         if pieceval and pieceval* team < 0:
-            moves.add((P, cand[0], cand[1]))
+            # attacking promotion
+            if row == backrank[-team] - team:
+                for p_code in piece.values():
+                    if p_code != K:
+                        moves.add((p_code, cand[0], cand[1]))
+            else:
+                moves.add((P, cand[0], cand[1]))
+            
 
     # Handle promotions
     if row == backrank[-team] - team:
-        for p_code in piece.values():
-            if p_code != K:
-                moves.add((p_code, row+team, col))
+        if on_board(board, backrank[-team], col) == empty:
+            for p_code in piece.values():
+                if p_code != K:
+                    moves.add((p_code, row+team, col))
     return moves_on_board(moves)
 
 def knight_move(board, row, col, team):
