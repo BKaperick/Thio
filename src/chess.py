@@ -359,32 +359,6 @@ def possible_moves(board, team, pieceloc = None):
     return moves
 
 
-#def possible_moves(board, team): 
-#    '''
-#    Given a board state and a team specifier, returns a list of 3-tuples
-#    describing the possible (end positions of?) moves that can be made.
-#    
-#    Note: this function does not remove moves which reveal checks illegally,
-#    or moves that fail to respond to an active check threat.
-#    '''
-#    opposing_piece_locs = zip(*np.where(board*team < 0))
-#    moves = []
-#    for x,y in opposing_piece_locs:
-#        if board[x,y] == team*P: 
-#            moves += pawn_move(board, x, y, team)
-#        elif board[x,y] == team*N: 
-#            moves += knight_move(board, x, y, team)
-#        elif board[x,y] == team*Q:
-#            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
-#        elif board[x,y] == team*B:
-#            moves += normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
-#        elif board[x,y] == team*R:
-#            moves += normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
-#    
-#    #moves += castling_moves(board, team)
-#    #moves += enpassant_moves(board, team)
-#    return moves
-
 def castling_moves(board, team):
     '''
     Returns 3-tuples flagged 'castle' in the first position for each possible
@@ -632,9 +606,17 @@ def retrograde(board, team, nmoves = 1):
     (2) See how many pieces are missing from opposite team and repeat (1) with taken pieces
     (3) Special moves like castling/enpassant
     '''
-
+    
+    # TODO
+    # * create set() of all pieces which have been removed from -`team`'s side
+    enemy_piece_locs = zip(*np.where(board*team < 0))
+    enemy_pieces_missing = {K,Q,B,N,R,P,fP}
+    for row, col in enemy_piece_locs:
+        epiece = on_board(board, row, col)
+        
     # List containing location of every piece on `team`
     piece_locs = zip(*np.where(board*team > 0))
+
     rmoves = []
     for row, col in piece_locs:
         if on_board(board, row, col) == team*N: 
@@ -649,7 +631,7 @@ def retrograde(board, team, nmoves = 1):
         elif on_board(board, row, col) == team*R:
             rmoves += normal_move(board, row, col, team, 
                     [(0,-1), (0,1), (-1,0), (1,0)])
-
+    
     possible_moves = []
     
     return moves
