@@ -8,10 +8,10 @@ import numpy as np
 fname = '../data/Adams.pgn'
 Wh = 1
 Bl = -1
-P = 1
 
 #fP is a "fresh pawn" (one that has just moved two spaces and can be 
 # en'passanted next turn.
+P = 1
 fP = 8
 R = 2
 N = 3

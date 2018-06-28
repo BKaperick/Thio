@@ -3,7 +3,7 @@ from read_pgn import *
 Wh = 1
 Bl = -1
 
-backrank = {Wh:0, Bl:7}
+backrank = {Wh:1, Bl:8}
 teams = {n:'White' for n in range(9)}
 teams.update({n:'Black' for n in range(-10,0)})
 P = 1
@@ -20,17 +20,13 @@ empty = 0
 def is_valid_move(start, end, team, verbose=0):
     '''
     INPUT
-    start -- array shaped (64,) containing a board state
-    end -- array shaped (64,) containing a board state 
+    start -- array shaped (8,8) containing a board state
+    end -- array shaped (8,8) containing a board state 
     team -- specifier for team, either `Wh` or `Bl`
 
     RETURN
     * Boolean deciding if exactly one valid chess move by `team` can map `start` 
     to `end`
-
-    TODO
-    * Decide whether (64,) or (8,8) shape is preferable.  Consider efficiency 
-    of reshape().  This is probably not a very important issue.
     '''
 
     diff = diffs(start,end)
@@ -42,12 +38,14 @@ def is_valid_move(start, end, team, verbose=0):
     
     # This loop builds the `moves` dictionary.
     # Iterate over all spaces which are different between the start and end board
-    # row -- the row that was changed (a file in range [0,...,7])
-    # col -- the col that was changed (a rank in range [0,...,7])
+    # row -- the row that was changed (a file in range [1,...,8])
+    # col -- the col that was changed (a rank in range [1,...,8])
     # bef_piece -- specifier for the piece at this position on `start`
     # aft_piece -- specifier for the piece at this position on `end`
     #for col, row, bef_piece, aft_piece in zip(*np.where(diff), start[diff], end[diff]):
     for col,row in zip(*diff):
+        col += 1
+        row += 1
         bef_piece = on_board(start,row,col)
         aft_piece = on_board(end,row,col)
         #if bef_piece == team*fP and aft_piece == team*P:
@@ -136,10 +134,10 @@ def is_valid_move(start, end, team, verbose=0):
         piece = on_board(start, x, y)
         # Set of 3-tuples describing all possible moves from start_spc
         end_spaces = possible_moves(start, team, pieceloc = start_spc)
-        end_spaces = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in end_spaces}
+        end_spaces = {tup if tup[0] != fP else (P,tup[1],tup[2]) for tup in end_spaces}
         # Set of 3-tuples 
         tmp = moves['moveto'].union(moves['take'])
-        tmp = {tup if tup[0] != 8 else (1,tup[1],tup[2]) for tup in tmp}
+        tmp = {tup if tup[0] != fP else (P,tup[1],tup[2]) for tup in tmp}
         found_matches = tmp.intersection(end_spaces)
         
         if verbose:
@@ -156,8 +154,8 @@ def is_valid_move(start, end, team, verbose=0):
 def is_promotion(start, end, team, moves, verbose=0):
     '''
     INPUT
-    start -- array shaped (64,) containing a board state
-    end -- array shaped (64,) containing a board state 
+    start -- array shaped (8,8) containing a board state
+    end -- array shaped (8,8) containing a board state 
     team -- specifier for team, either `Wh` or `Bl`
     moves -- dictionary encoding details about changes between `start` and `end`
 
@@ -170,7 +168,6 @@ def is_promotion(start, end, team, moves, verbose=0):
     function does not determine whether other moves are also taking place.
     However, this check is already performed in `is_valid_move` prior to
     entering this function
-
     '''
     if verbose > 1:
         print("is_promotion:")
@@ -211,8 +208,8 @@ def is_promotion(start, end, team, moves, verbose=0):
 def is_castling(start, end, team, moves, verbose=0):
     '''
     INPUT
-    start -- array shaped (64,) containing a board state
-    end -- array shaped (64,) containing a board state 
+    start -- array shaped (8,8) containing a board state
+    end -- array shaped (8,8) containing a board state 
     team -- specifier for team, either `Wh` or `Bl`
     moves -- dictionary encoding details about changes between `start` and `end`
 
@@ -228,14 +225,15 @@ def is_castling(start, end, team, moves, verbose=0):
     '''
     
     # Important squares for kingside and queenside castling respectively
-    castling_files = ( {'kf':4,'rf':0,'kt':2,'rt':3}, 
-                       {'kf':4,'rf':7,'kt':6,'rt':5} )
+    castling_files = ( {'kf':5,'rf':1,'kt':3,'rt':4}, 
+                       {'kf':5,'rf':8,'kt':7,'rt':6} )
     
     castling = [False, False]
     for i,files in enumerate(castling_files):
         
         if verbose > 1:
             print("is in check: ", is_in_check(start, team))
+            print(move_to_string(K,backrank[team],files['kf']))
             print((K,backrank[team],files['kf']) in moves['movefrom'])
             print((R,backrank[team],files['rf']) in moves['movefrom'])
             print((K,backrank[team],files['kt']) in moves['moveto'])
@@ -277,8 +275,8 @@ def is_enpassant(start, end, team, moves, verbose=0):
     NOTE
     * this function does not check whether other moves have occurred also
     '''
-    passes = enpassant_moves(start, team)
-    if verbose > 1:
+    passes = enpassant_moves(start, team, verbose)
+    if verbose >= 1:
         print("is_enpassant")
         print(moves)
         print(passes)
@@ -291,9 +289,12 @@ def is_enpassant(start, end, team, moves, verbose=0):
         elif passant[0] == 'pass right':
             direction = -1#team
         if verbose > 1:
+            print(move_to_string(P,passant[1],passant[2]))
             print((P,passant[1],passant[2]) in moves['moveto'])
+            print(move_to_string(fP,passant[1]-team, passant[2]))
             print((fP,passant[1]-team, passant[2]) in moves['movefrom'])
             print(team,direction)
+            print(P,passant[1]-team, passant[2]+direction)
             print((P,passant[1]-team, passant[2]+direction) in moves['movefrom'])
         
         move_happened = (not move_happened and
@@ -321,7 +322,7 @@ def is_in_check(board, team, verbose=0):
 def possible_moves(board, team, pieceloc = None): 
     '''
     INPUT
-    board -- array shaped (64,) containing a board state
+    board -- array shaped (8,8) containing a board state
     team -- specifier for team, either `Wh` or `Bl`
     pieceloc -- if left `None` then all possible moves from all pieces on 
         `board` on the specified `team` are computed.  Else, only `pieceloc`'s 
@@ -367,10 +368,10 @@ def castling_moves(board, team):
     Note: This function does not check whether the castling violates check.
     '''
     # Important squares for kingside and queenside castling respectively
-    castling_files = ( {'kf':4,'rf':0,'kt':2,'rt':3}, 
-                       {'kf':4,'rf':7,'kt':6,'rt':5} )
+    castling_files = ( {'kf':5,'rf':1,'kt':3,'rt':4}, 
+                       {'kf':5,'rf':8,'kt':7,'rt':6} )
     br = backrank[team]
-    moves = [('castle', 2, br), ('castle', 6, br)]
+    moves = [('castle', 3, br), ('castle', 7, br)]
     for ind,files in enumerate(castling_files):
         if on_board(board, br, files['kf']) == team*K and on_board(board, br, files['rf']) == team*R:
 
@@ -381,7 +382,7 @@ def castling_moves(board, team):
                     break
     return [m for m in moves if m]
 
-def enpassant_moves(board, team):
+def enpassant_moves(board, team, verbose=0):
     '''
     INPUT
     board -- 2d array storing board state
@@ -395,10 +396,10 @@ def enpassant_moves(board, team):
 
     # The only rank on which enemy fresh pawns can be located.
     fourth_rank = backrank[-team] - 3*team
+    if verbose > 1: print("4th rank index on [0,7] at ", fourth_rank-1)
     
     # Files on which these fresh pawns are found
-    enemy_freshpawn_locs = [i for i,x in enumerate(board[:, fourth_rank]) if x == -team*fP]
-    
+    enemy_freshpawn_locs = [i+1 for i,x in enumerate(board[:, fourth_rank-1]) if x == -team*fP]
     for y in enemy_freshpawn_locs:
 
         # If one of team's pawns is in the position to en'passant a fresh pawn,
@@ -421,22 +422,22 @@ def move_to_string(piece, row, col,justloc=0):
             #piece = teams[piece] + " " + piece_to_string[abs(piece)]
             piece = piece_to_string[abs(piece)]
         out = "A " + piece + " at "
-    return out + chr(col + 97) + str(row+1)
+    return out + chr(col + 96) + str(row)
 
 
 def on_board(board, row, col):
     '''
     INPUT
     board -- 2d array storing board state
-    row -- a file (column) on [0,7]
-    col -- a rank (row) on [0,7]
+    row -- a file (column) on [1,8]
+    col -- a rank (row) on [1,8]
 
     RETURN
     The piece on `board` at the specified row and column, or `None` if the 
     coordinates are invalid.
     '''
-    if 0 <= row <= 7 and 0 <= col <= 7:
-        return board[col, row]
+    if 1 <= row <= 8 and 1 <= col <= 8:
+        return board[col-1, row-1]
     return None
 
 def moves_on_board(move_tuple):
@@ -447,7 +448,7 @@ def moves_on_board(move_tuple):
     RETURN
     * Set of tuples with row and column indices within 0,...,7 range.
     '''
-    return set([(p,r,c) for p,r,c in move_tuple if 0 <= r <= 7 and 0 <= c <= 7])
+    return set([(p,r,c) for p,r,c in move_tuple if 1 <= r <= 8 and 1 <= c <= 8])
 
 
 def pawn_move(board, row, col, team):
@@ -552,7 +553,7 @@ def generate_straight(board, start_row, start_col, direction):
     for mult in range(1,8):
         new_x = start_row + direction[0]*mult
         new_y = start_col + direction[1]*mult
-        if 0 <= new_x <= 7 and 0 <= new_y <= 7:
+        if 1 <= new_x <= 8 and 1 <= new_y <= 8:
             yield on_board(board, new_x, new_y), new_x, new_y
 
 def normal_move(board, row, col, team, sign_pairs):

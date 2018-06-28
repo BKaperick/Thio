@@ -2,20 +2,17 @@
 # ./chess.py
 ## is_valid_move(start, end, team, verbose=0)
 >     INPUT
->     start -- array shaped (64,) containing a board state
->     end -- array shaped (64,) containing a board state 
+>     start -- array shaped (8,8) containing a board state
+>     end -- array shaped (8,8) containing a board state 
 >     team -- specifier for team, either `Wh` or `Bl`
 >     RETURN
 >     * Boolean deciding if exactly one valid chess move by `team` can map `start` 
 >     to `end`
->     TODO
->     * Decide whether (64,) or (8,8) shape is preferable.  Consider efficiency 
->     of reshape().  This is probably not a very important issue.
 
 ## is_promotion(start, end, team, moves, verbose=0)
 >     INPUT
->     start -- array shaped (64,) containing a board state
->     end -- array shaped (64,) containing a board state 
+>     start -- array shaped (8,8) containing a board state
+>     end -- array shaped (8,8) containing a board state 
 >     team -- specifier for team, either `Wh` or `Bl`
 >     moves -- dictionary encoding details about changes between `start` and `end`
 >     RETURN
@@ -29,8 +26,8 @@
 
 ## is_castling(start, end, team, moves, verbose=0)
 >     INPUT
->     start -- array shaped (64,) containing a board state
->     end -- array shaped (64,) containing a board state 
+>     start -- array shaped (8,8) containing a board state
+>     end -- array shaped (8,8) containing a board state 
 >     team -- specifier for team, either `Wh` or `Bl`
 >     moves -- dictionary encoding details about changes between `start` and `end`
 >     Checks whether `team` is castling legally.  Does not make any claims about 
@@ -55,12 +52,12 @@
 >     NOTE
 >     * this function does not check whether other moves have occurred also
 
-## is_in_check(board, team)
+## is_in_check(board, team, verbose=0)
 >     Given the board state, determines whether team's king is threatened.
 
 ## possible_moves(board, team, pieceloc = None)
 >     INPUT
->     board -- array shaped (64,) containing a board state
+>     board -- array shaped (8,8) containing a board state
 >     team -- specifier for team, either `Wh` or `Bl`
 >     pieceloc -- if left `None` then all possible moves from all pieces on 
 >         `board` on the specified `team` are computed.  Else, only `pieceloc`'s 
@@ -77,7 +74,7 @@
 >     castling move in this board state by this team. 
 >     Note: This function does not check whether the castling violates check.
 
-## enpassant_moves(board, team)
+## enpassant_moves(board, team, verbose=0)
 >     INPUT
 >     board -- 2d array storing board state
 >     team -- +/- 1 indicating on which team this piece is
@@ -89,8 +86,8 @@
 ## on_board(board, row, col)
 >     INPUT
 >     board -- 2d array storing board state
->     row -- a file (column) on [0,7]
->     col -- a rank (row) on [0,7]
+>     row -- a file (column) on [1,8]
+>     col -- a rank (row) on [1,8]
 >     RETURN
 >     The piece on `board` at the specified row and column, or `None` if the 
 >     coordinates are invalid.
@@ -155,13 +152,16 @@
 >     RETURN
 >     moves -- set of three tuples of the form [piece, landing_x, landing_y]
 
+
+# ./retrograde.py
 ## retrograde(board, team, nmoves = 1)
 >     INPUT
 >     board -- the board object at the current move
 >     team -- team which made the most recent move to arrive at board
 >     nmoves -- the number of moves to backtrack.
 >     RETURN
->     rmoves -- a list of 2-tuples of moves by `team` to reach `board`.
+>     rmoves -- a list of 3-tuples (initial-board, start-coord, end-coord) by 
+>         `team` to reach `board`.
 >     TODO 
 >     * Moves of type (2) as detailed below
 >     * Moves of type (3) as detailed below

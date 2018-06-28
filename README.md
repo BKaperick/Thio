@@ -7,7 +7,9 @@ Given the board state at turn $n$, this project seeks to recreate the game state
 ## Development Notes
 Some quirks of the code which are useful for development and use of this repo.
 
+
 * Chess boards are encoded as size (8,8) numpy arrays of 8-bit signed integers.  Each empty space is denoted by `0` and each unique piece type has an integer value.  The black pieces are negative, and white pieces positive.  These values are defined in `read_pgn.py` as capital letters at the start of the file.
+    * The recommended way to access a piece at a particular board position is to call `on_board(board, row, col)` which accepts `row` and `col` as positive integers in the range 1,...,8.  It automatically performs an out of bounds check for safety.
     * Be careful because pawns have a different integer value on the move immediately after making a 2-space forward advancement.  This is to allow the proper encoding of En Passant moves, which can only be made on the move immediately after such a double move has been performed by the opponent.  **A common mistake is to perform a check like** `on_board(board, row, col) == P` **which will fail on a recently-double-advanced pawn**.
 
 * Moves are typically encoded as a 3-tuple of `(piece-code-at-end-of-move, row-at-end-of-move, col-at-end-of-move)`.  For example Bc1-d2 becomes `(B, 1, 4)`, and a pawn promotion on e1 would be `(Q, 0, 4)`.  **A common mistake is to put a negative value in the first position for a black move.  The first position is always positive**.
