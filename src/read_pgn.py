@@ -23,6 +23,7 @@ O = 7
 empty = 0
 
 piece = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
+reversePiece = {v:k for k,v in piece.items()}
 piece_to_string = {
         fP: '(f)Pawn',
         P: 'Pawn',
@@ -64,14 +65,22 @@ class Game:
     def moves(self):
         while self.result == '':
             if self._cpTeam == Wh:
-                whiteMove = self.movemaker(self.board,Wh)
+                whiteMove = self.translateMoveToChessNotation(self.movemaker(self.board,Wh))
                 blackMove = input("move:")
 
             else:
                 whiteMove = input("move:")
-                blackMove = self._movemaker(self.board,Wh)
+                blackMove = self.translateMoveToChessNotation(self._movemaker(self.board,Wh))
             yield (whiteMove,blackMove)
     
+    def translateMoveToChessNotation(self,move):
+        piece = reversePiece[move[0]]
+        if piece == 'P':
+            piece = ''
+        row = move[1]
+        col = chr(96 + move[2])
+        return piece + str(col) + str(row)
+
     def runGame(self, savestates=True, verbose=0):
         '''
         INPUT
@@ -122,6 +131,7 @@ class Game:
     def makeMove(self, chessNotation, team, prevTurnStart, prevTurnEnd):
         # Pass in team's move in standard chess notation and team's team 
         # code to extract starting and ending positions.
+        print("in chess notation:", chessNotation)
         (boardTurnStart, boardTurnEnd), enpassant_flag = self.clarifyMove(chessNotation, team, prevTurnStart, prevTurnEnd)
         # Update the board
         self.movePiece(boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
