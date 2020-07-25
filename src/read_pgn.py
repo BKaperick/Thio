@@ -35,10 +35,10 @@ piece_to_string = {
         empty: 'Empty'}
 # a:1, ..., h:8
 coord = {chr(i):i-96 for i in range(97,105)}
-
+    
 
 class Game:
-    def __init__(self, result, moves):
+    def __init__(self, cpTeam, movemaker):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -52,25 +52,26 @@ class Game:
         self.board[i,j] is the ith rank (row) and jth file (column), each
         indexed from 0-7
         '''
-        
-        #Adds null move if white was the last to play
-        if len(moves) % 2 == 1:
-            moves.append(None)
-
-        #Removes move number from each pair of moves
-        self.moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves)-5, 2)]
-
-        self.result = result.split('-')[0]
+        self.result = ''
+        self._cpTeam = cpTeam
+        self._movemaker = movemaker
 
         #Initializes board to chess starting position
-        self.board = np.zeros((8,8), dtype=np.int8)
-        self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
-        self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.createCleanBoard()
 
         self.movenum = 0
 
+    def moves(self):
+        while self.result == '':
+            if self._cpTeam == Wh:
+                whiteMove = self.movemaker(self.board,Wh)
+                blackMove = input("move:")
+
+            else:
+                whiteMove = input("move:")
+                blackMove = self._movemaker(self.board,Wh)
+            yield (whiteMove,blackMove)
+    
     def runGame(self, savestates=True, verbose=0):
         '''
         INPUT
@@ -88,26 +89,17 @@ class Game:
         startB, endB = '', ''
         
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
-        for i, m in enumerate(self.moves):
+        for i, m in enumerate(self.moves()):
             if verbose: print(i,m)
             self.movenum += 1
 
-            # Pass in white's move in standard chess notation and white's team 
-            # code to extract starting and ending positions.
-            (startW, endW), enpassant_flag = self.clarifyMove(m[0], Wh, startB, endB)
-            
-            # Update the board
-            self.movePiece(startW, endW, Wh, enpassant=enpassant_flag)
+                
+            (startW, endW) = self.makeMove(m[0], Wh, startB, endB)
             
             if savestates:
                 states.append(self.board.copy())
-            
-            # Pass in black's move in standard chess notation and black's team 
-            # code to extract starting and ending positions.
-            (startB, endB), enpassant_flag = self.clarifyMove(m[1], Bl, startW, endW)
-            
-            # Update the board
-            self.movePiece(startB, endB, Bl, enpassant=enpassant_flag)
+
+            (startB, endB) = self.makeMove(m[1], Bl, startW, endW)
             
             if savestates:
                 states.append(self.board.copy())
@@ -119,6 +111,21 @@ class Game:
         if savestates:
             return states
             
+
+    def createCleanBoard(self):
+        self.board = np.zeros((8,8), dtype=np.int8)
+        self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
+        self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+    
+    def makeMove(self, chessNotation, team, prevTurnStart, prevTurnEnd):
+        # Pass in team's move in standard chess notation and team's team 
+        # code to extract starting and ending positions.
+        (boardTurnStart, boardTurnEnd), enpassant_flag = self.clarifyMove(chessNotation, team, prevTurnStart, prevTurnEnd)
+        # Update the board
+        self.movePiece(boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
+        return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
         '''
@@ -221,6 +228,7 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
+        print(move)
         #print("cm: ", move)
         # Checks do not affect anything
         move = move.replace('+','')
@@ -430,6 +438,46 @@ class Game:
             elif end[0] == 3:
                 self.setCoord(4, team, team*R)
                 self.setCoord(1, team, empty)
+
+class HistoricalGame(Game): 
+    def __init__(self, result, moves):
+        '''
+        INPUT
+        result -- a string '1' or '0' or '1/2' indicating the game result
+        moves -- a list of moves alternating between white and black moves each 
+        given as a string of standard chess notation.
+
+        RETURN
+        self -- Game instance
+
+        Also builds the board to the initial setup ready for simulation.
+        self.board[i,j] is the ith rank (row) and jth file (column), each
+        indexed from 0-7
+        '''
+        
+        #Adds null move if white was the last to play
+        if len(moves) % 2 == 1:
+            moves.append(None)
+
+        #Removes move number from each pair of moves
+        self._moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves)-5, 2)]
+
+        if result:
+            self.result = result.split('-')[0]
+        else:
+            self.result = ''
+
+        #Initializes board to chess starting position
+        self.board = self.createCleanBoard()
+
+        self.movenum = 0
+   
+    def moves(self):
+        for m in self._moves:
+            yield m
+
+
+
 
 
 def diffs(board1, board2):

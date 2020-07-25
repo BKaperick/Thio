@@ -23,30 +23,30 @@ def gen_pairs(games, start_count = 0):
 
 if __name__ == "__main__":
     verbosity = int(argv[1]) if len(argv) > 1 else 0
-    games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)
     
-    #states = []
-    #for game in games:
-    #    states += game.runGame()
+    if len(argv) > 2 and rgv[2] == "-play":
+        board = 
+    
+    else:
+        games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)
+        
+        correct = 0
+        total = 0
+        
+        for start, end, team, index in gen_pairs(games):
+            if verbosity:
+                print("MOVE: ", index)
+            result = is_valid_move(start, end, team, verbose=verbosity)
+            if not result:
+                print("failed: ", index)
+                print_board(start)
+                print_board(end)
+                print(team)
+                break
+            correct += int(result)
+            total += 1
 
-    #chain([games[ind].runGame() for ind in game_indices])
-    correct = 0
-    total = 0
-    
-    for start, end, team, index in gen_pairs(games):
-        if verbosity:
-            print("MOVE: ", index)
-        result = is_valid_move(start, end, team, verbose=verbosity)
-        if not result:
-            print("failed: ", index)
-            print_board(start)
-            print_board(end)
-            print(team)
-            break
-        correct += int(result)
-        total += 1
-
-    print("finished: ", correct , " / " , total)
-    
+        print("finished: ", correct , " / " , total)
+        
 
     
