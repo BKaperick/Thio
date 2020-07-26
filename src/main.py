@@ -24,8 +24,8 @@ def gen_pairs(games, start_count = 0):
 if __name__ == "__main__":
     verbosity = int(argv[1]) if len(argv) > 1 else 0
     
-    if len(argv) > 2 and rgv[2] == "-play":
-        board = 
+    if len(argv) > 2:
+        pass 
     
     else:
         games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)

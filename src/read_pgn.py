@@ -48,7 +48,7 @@ class HistoricalGame(Game):
             self.result = ''
 
         #Initializes board to chess starting position
-        self.board = self.createCleanBoard()
+        self.createCleanBoard()
 
         self.movenum = 0
    

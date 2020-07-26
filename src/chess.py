@@ -17,6 +17,9 @@ C = 7
 O = 7
 empty = 0
 
+diags = [(-1,-1), (-1,1), (1,-1), (1,1)]
+lrup = [(1,0), (0,1), (-1,0), (0,-1)]
+
 def is_valid_move(start, end, team, verbose=0):
     '''
     INPUT
@@ -340,6 +343,8 @@ def possible_moves(board, team, pieceloc = None):
         piece_locs = {pieceloc}
     else:
         piece_locs = zip(*np.where(board*team > 0))
+    piece_locs = ((y+1,x+1) for x,y in piece_locs)
+
     moves = set()
     for x,y in piece_locs:
         if on_board(board, x, y) == team*P or on_board(board, x, y) == team*fP: 
@@ -347,14 +352,15 @@ def possible_moves(board, team, pieceloc = None):
         elif on_board(board, x, y) == team*N: 
             moves ^= knight_move(board, x, y, team)
         elif on_board(board, x, y) == team*Q:
-            moves ^= normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1), (1,0), (0,1), (-1,0), (0,-1)])
+            moves ^= normal_move(board, x, y, team, diags + lrup)
         elif on_board(board, x, y) == team*B:
-            moves ^= normal_move(board, x, y, team, [(-1,-1), (-1,1), (1,-1), (1,1)])
+            moves ^= normal_move(board, x, y, team, diags)
         elif on_board(board, x, y) == team*R:
-            moves ^= normal_move(board, x, y, team, [(0,-1), (0,1), (-1,0), (1,0)])
+            moves ^= normal_move(board, x, y, team, lrup)
         elif on_board(board, x, y) == team*K:
             moves ^= king_move(board, x, y, team)
-    
+        else:
+            print("found nothing:",x,y,on_board(board,x,y))
     #moves += castling_moves(board, team)
     #moves += enpassant_moves(board, team)
     return moves

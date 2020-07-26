@@ -55,7 +55,7 @@ class Game:
 
             else:
                 whiteMove = input("move:")
-                blackMove = self.translateMoveToChessNotation(self._movemaker(self.board,Wh))
+                blackMove = self.translateMoveToChessNotation(self._movemaker(self.board,Bl))
             yield (whiteMove,blackMove)
     
     def translateMoveToChessNotation(self,move):
