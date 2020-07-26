@@ -220,10 +220,15 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
-        print("clarify:",move)
-        #print("cm: ", move)
+        
         # Checks do not affect anything
+        move = move.replace(' ','')
         move = move.replace('+','')
+        move = move.replace('x','')
+        if len(move) == 2 or len(move) == 4:
+            move = move.lower()
+        if len(move) == 3:
+            move = move[0] + move[1:].lower()
 
         start = [None, None]
         
@@ -239,16 +244,20 @@ class Game:
         ##########
         #  PAWN
         ##########
-
+        if len(move) == 4:
+            start = [int(move[1]), rankLetterToCol[move[0]]]
+            return (start,end),False
+             
         # If the move consists of two coordinates, it's a pawn
-        if len(move) == 2 or len(move) == 4:
+        if len(move) == 2:
             p = P
             
             start = [end[0] - team, end[1]]
 
             #If start is incorrect
             if self.coord(*start) != team*P and self.coord(*start) != team*fP:
-               start[0] -= team
+                print("adjust")
+                start[0] -= team
             return (start, end), False
                
         #capture -- does not include en'passant
@@ -262,6 +271,7 @@ class Game:
             if 'x' in move or move[0] != move[2]:
                 if len(move) == 5:
                     move = move.replace('x','')
+                print("pawn attack:",move,end)
                 output = ([end[1] - team, rankLetterToCol[move[0]]], end)
                 # En'passant
                 if rankLetterToCol[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:

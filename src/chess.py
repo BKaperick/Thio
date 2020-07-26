@@ -489,7 +489,7 @@ def pawn_move(board, row, col, team):
         if pieceval and pieceval* team < 0:
             # attacking promotion
             if row == backrank[-team] - team:
-                for p_code in piece.values():
+                for p_code in pieceStrToVal.values():
                     if p_code != K:
                         moves.add((p_code, row, col, cand[0], cand[1]))
             else:
@@ -499,7 +499,7 @@ def pawn_move(board, row, col, team):
     # Handle promotions
     if row == backrank[-team] - team:
         if on_board(board, backrank[-team], col) == empty:
-            for p_code in piece.values():
+            for p_code in pieceStrToVal.values():
                 if p_code != K:
                     moves.add((p_code, row, col, row+team, col))
     return moves_on_board(moves)
