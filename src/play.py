@@ -16,12 +16,14 @@ def random_move(board,team):
     else:
         print("moving with purpose")
         moves = list(possible_moves(board,team,pos))
+        if len(moves) == 0:
+            moves = list(possible_moves(board,team))
     
     movesCN = [translateMoveToChessNotation(move) for move in moves]
-    print("options:",movesCN)
     move = random.choice(moves)
-    print(move)
-    return (move[1:3][::-1],move[3:5][::-1]),False
+    print(translateMoveToChessNotation(move))
+    #return (move[1:3][::-1],move[3:5][::-1]),False
+    return (move[1:3],move[3:5]),False
             
         
         

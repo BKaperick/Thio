@@ -107,45 +107,46 @@ class Game:
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
     
     def makeMove(self, prevTurnStart, prevTurnEnd, team):
-        # Pass in team's move in standard chess notation and team's team 
+        
         # code to extract starting and ending positions.
         (boardTurnStart, boardTurnEnd), enpassant_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
+        # update board
         self.movePiece(boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
         return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
         '''
-        Given an end coordinate on range [1,8] and a team/piece, returns a list 
+        Given an end coordinate (row,col) on range [1,8] and a team/piece, returns a list 
         of all pieces of this team and this piece type which could have reached 
         end with a straight movement.
         '''
         starts = []
 
         # Row to left of end coordinate
-        for i in range(end[0]-1,0,-1):
-            p = self.coord(i, end[1])
+        for i in range(end[1]-1,0,-1):
+            p = self.coord(end[0], i)
             if  p == team*piece:
-                starts.append([i, end[1]])
+                starts.append([end[0], i])
             if p != empty:
                 break
         
         # Row to right of end coordinate
-        for i in range(end[0]+1,9):
-            p = self.coord(i, end[1])
+        for i in range(end[1]+1,9):
+            p = self.coord(end[0], i)
             if  p == team*piece:
+                starts.append([end[0], i])
+            if p != empty:
+                break
+        for i in range(end[0]-1,0,-1):
+            p = self.coord(i, end[1])
+            if p == team*piece:
                 starts.append([i, end[1]])
             if p != empty:
                 break
-        for i in range(end[1]-1,0,-1):
-            p = self.coord(end[0],i)
+        for i in range(end[0]+1,9):
+            p = self.coord(i, end[1])
             if p == team*piece:
-                starts.append([end[0], i])
-            if p != empty:
-                break
-        for i in range(end[1]+1,9):
-            p = self.coord(end[0],i)
-            if p == team*piece:
-                starts.append([end[0], i])
+                starts.append([i, end[1]])
             if p != empty:
                 break
         return starts
@@ -216,7 +217,7 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
-        print(move)
+        print("clarify:",move)
         #print("cm: ", move)
         # Checks do not affect anything
         move = move.replace('+','')
@@ -230,7 +231,7 @@ class Game:
             # Note this coordinate is in range 1 <= end[i] <= 8
             # and end[0] is a file
             # and end[1] is a rank
-            end = [coord[move[-2]], int(move[-1])]
+            end = [int(move[-1]), coord[move[-2]]]
 
         ##########
         #  PAWN
@@ -240,25 +241,26 @@ class Game:
         if len(move) == 2:
             p = P
             
-            start = [end[0], end[1] - team]
+            start = [end[0] - team, end[1]]
 
             #If start is incorrect
             if self.coord(*start) != team*P and self.coord(*start) != team*fP:
-               start[1] -= team
+               start[0] -= team
             return (start, end), False
                
         #capture -- does not include en'passant
         if move[0] in coord.keys():
             if '=' in move:
                 if len(move) == 4:
-                    return ([coord[move[0]], int(move[1]) - team], [coord[move[0]], int(move[1])]), False
+                    return ([int(move[1]) - team, coord[move[0]]], [int(move[1]), coord[move[0]]]), False
                 else:
-                    return ([coord[move[0]], int(move[3]) - team], [coord[move[2]], int(move[3])]), False
+                    return ([int(move[3]) - team, coord[move[0]]], [int(move[3]), coord[move[2]]]), False
 
             if 'x' in move:
-                output = ([coord[move[0]], end[1] - team], end)
+                move = move.replace('x','')
+                output = ([end[1] - team, coord[move[0]]], end)
                 # En'passant
-                if coord[move[2]] == prev_move_start[0] == prev_move_end[0] and prev_move_end[1] + team == end[1]:
+                if coord[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:
                    return output, True 
                 return output, False
         
@@ -299,9 +301,9 @@ class Game:
             #If additional context is needed to clarify
             if len(move) == 4:
                 if move[1] in coord.keys():
-                    starts = [m for m in starts if m[0] == coord[move[1]]]
+                    starts = [m for m in starts if m[1] == coord[move[1]]]
                 else:
-                    starts = [m for m in starts if m[1] == int(move[1])]
+                    starts = [m for m in starts if m[0] == int(move[1])]
             start = self.ambiguous(starts, move)
 
 
@@ -330,27 +332,27 @@ class Game:
                 
         elif p == K: # Piece is equal to "king"
             starts = [] # init starts
-            for i in range(-1,2): 
-                for j in range(-1,2):
-                    crd = [end[0] + i, end[1] + j] # Relative coordinates (-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1),(1,-1),(1,0),(1,1)
+            for direction in lrup + diags:
+                crd = [end[0] + direction[0], end[1] + direction[1]] # Relative coordinates (-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1),(1,-1),(1,0),(1,1)
 
-                    # If we exclude (0,0) and 
-                    if (not (i == 0 and j == 0)) and self.coord(*crd) == team*K:
-                        start = crd
-                        break 
+                if self.coord(*crd) == team*K:
+                    start = crd
+                    break 
         #Castling
         elif p == O:
             # Queen-side castling
             if len(move) == 5:
-                return ([5,team],[3,team]), False
+                return ([team,5],[team,3]), False
             # King-side castling
             else:
-                return ([5,team],[7,team]), False
+                return ([team,5],[team,7]), False
 
         return(start,end), False
 
     def coord(self, c1, c2):
         '''
+        INPUT
+        row,col
         Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
         the specified board position.  Negative indices are treated such that 
         -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
@@ -366,25 +368,9 @@ class Game:
         if c1 < 0: c1 += 9
         if c2 < 0: c2 += 9
         try:
-            return self.board[c1-1, c2-1]
+            return self.board[c2-1, c1-1]
         except IndexError:
             return None
-
-    #Sets the board position to val
-#    def setCoord(self, c1, c2, val):
-#        '''
-#        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
-#        the specified board position and updates self.board with val at this 
-#        position.  Negative indices are treated such that -1 maps to 8, -2 maps
-#        to 7, etc.  This functionality is only used when
-#        handling castling and promotions symmetrically.
-#        
-#        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
-#        position which is out of bounds, so None is returned.
-#        '''
-#        if c1 < 0: c1 += 9
-#        if c2 < 0: c2 += 9
-#        self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team, enpassant = False):
         '''
@@ -399,11 +385,11 @@ class Game:
                 self.board[x,y] = team*P
         
         #Special case of a promotion (assumes to queen)
-        if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
+        if end[0] == 8 and self.coord(*start) == P or end[0] == 1 and self.coord(*start) == -P:
             setCoord(self.board, *end, team*Q)
         else:
             # In the case of double-moving pawn (special case to allow en'passant on it)
-            if self.coord(*start) == team*P and abs(end[1] - start[1]) == 2:
+            if self.coord(*start) == team*P and abs(end[0] - start[0]) == 2:
                 setCoord(self.board, *end, team*fP)
 
             # All other basic moves
@@ -413,19 +399,19 @@ class Game:
         
         # Remove the pawn that has been en'passanted
         if enpassant:
-            setCoord(self.board, end[0], end[1] - team, empty)
+            setCoord(self.board, end[1], end[0] - team, empty)
         
         #Replace starting place with empty
         setCoord(self.board, *start, empty)
 
         #Handles the rook move in the case of castling
-        if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
-            if end[0] == 7:
-                setCoord(self.board, 6, team, team*R)
-                setCoord(self.board, 8, team, empty)
-            elif end[0] == 3:
-                setCoord(self.board, 4, team, team*R)
-                setCoord(self.board, 1, team, empty)
+        if self.coord(*end) == team*K and abs(end[1] - start[1]) > 1:
+            if end[1] == 7:
+                setCoord(self.board, team, 6, team*R)
+                setCoord(self.board, team, 8, empty)
+            elif end[1] == 3:            
+                setCoord(self.board, team, 4, team*R)
+                setCoord(self.board, team, 1, empty)
 
 # Helper functions
 
@@ -453,6 +439,7 @@ def translateMoveToChessNotation(move):
 
 def setCoord(board, c1, c2, val):
     '''
+    INPUT is in (row,col) format
     Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
     the specified board position and updates self.board with val at this 
     position.  Negative indices are treated such that -1 maps to 8, -2 maps
@@ -464,5 +451,5 @@ def setCoord(board, c1, c2, val):
     '''
     if c1 < 0: c1 += 9
     if c2 < 0: c2 += 9
-    board[c1-1, c2-1] = val
+    board[c2-1, c1-1] = val
     return board
