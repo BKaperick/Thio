@@ -1,11 +1,12 @@
-from read_pgn import *
+#from game import *
+import numpy as np
+
 
 Wh = 1
 Bl = -1
 
-backrank = {Wh:1, Bl:8}
-teams = {n:'White' for n in range(9)}
-teams.update({n:'Black' for n in range(-10,0)})
+#fP is a "fresh pawn" (one that has just moved two spaces and can be 
+# en'passanted next turn.
 P = 1
 fP = 8
 R = 2
@@ -16,6 +17,13 @@ K = 6
 C = 7
 O = 7
 empty = 0
+
+pieceStrToVal = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
+pieceValToStr = {v:k for k,v in pieceStrToVal.items()}
+
+backrank = {Wh:1, Bl:8}
+teams = {n:'White' for n in range(9)}
+teams.update({n:'Black' for n in range(-10,0)})
 
 diags = [(-1,-1), (-1,1), (1,-1), (1,1)]
 lrup = [(1,0), (0,1), (-1,0), (0,-1)]
@@ -317,8 +325,8 @@ def is_in_check(board, team, verbose=0):
     if verbose > 1:
         print([move_to_string(*th) for th in threats])
 
-    for flag,x,y in threats:
-        if on_board(board, x, y) == K:
+    for flag,_,__,x,y in threats:
+        if on_board(board, x, y) == team*K:
             return True
     return False
 

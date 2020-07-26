@@ -1,25 +1,6 @@
 import numpy as np
 from chess import *
 
-Wh = 1
-Bl = -1
-
-#fP is a "fresh pawn" (one that has just moved two spaces and can be 
-# en'passanted next turn.
-P = 1
-fP = 8
-R = 2
-N = 3
-B = 4
-Q = 5
-K = 6
-C = 7
-O = 7
-empty = 0
-
-pieceStrToVal = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
-pieceValToStr = {v:k for k,v in pieceStrToVal.items()}
-
 # a:1, ..., h:8
 rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
 colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
@@ -440,11 +421,11 @@ def print_board(board,perspective = Bl):
                 printedBoard[7-j][i] = remap[board[i][j]]
             else:
                 printedBoard[j][7-i] = remap[board[i][j]]
-    row_header = '     A    B    C    D    E    F    G    H'
+    row_header = 'A    B    C    D    E    F    G    H'
     if perspective == Wh:
-        print(row_header)
+        print(" "*4+row_header)
     else:
-        print(row_header[::-1])
+        print(" "*4+row_header[::-1])
     for i,r in enumerate(printedBoard):
         if perspective == Wh:
             print(8-i,r)
@@ -482,4 +463,6 @@ def print_coord(coord):
     return out
 
 def print_move(move):
+    if move == None:
+        return ""
     return pieceValToStr[move[0]] + print_coord(move[1:3]) + " " + print_coord(move[3:5])
