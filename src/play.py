@@ -5,19 +5,23 @@ def random_move(board,team):
     threats = list(possible_moves(board,-team))
     maxValue = 0
     pos = (-1,-1)
-    for flag,x,y in threats:
-        value = pieceValue[abs(on_board(board,x,y))]
+    for flag,x1,y1,x2,y2 in threats:
+        value = pieceValue[abs(on_board(board,x2,y2))]
         if value > maxValue:
             maxValue = value
-            pos = (x,y)
+            pos = (x2,y2)
     if maxValue == 0:
+        print("moving randomly")
         moves = list(possible_moves(board,team))
     else:
+        print("moving with purpose")
         moves = list(possible_moves(board,team,pos))
     
     movesCN = [translateMoveToChessNotation(move) for move in moves]
     print("options:",movesCN)
-    return random.choice(moves)
+    move = random.choice(moves)
+    print(move)
+    return (move[1:3][::-1],move[3:5][::-1]),False
             
         
         

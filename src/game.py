@@ -47,14 +47,18 @@ class Game:
 
         self.movenum = 0
 
-    #def getNextMove(self,prevTurnBefore,prevTurnAfter,team):
-    def getNextMove(self,team):
-        if self._cpTeam == team:
-            move = self._movemaker(self.board,self._cpTeam)
-            moveCN = translateMoveToChessNotation(move)
+    def getNextMove(self,before,after,team):
+        if team == self._cpTeam:
+            return self.getNextComputerMove(team)
         else:
-            moveCN = input("move:")
-        return moveCN
+            return self.getNextUserMove(before,after,team)
+
+    def getNextUserMove(self,before,after,team):
+        move = input("move:")
+        return self.clarifyMove(move, team, before, after)
+
+    def getNextComputerMove(self,team):
+        return self._movemaker(self.board,self._cpTeam)
     
     def runGame(self, savestates=True, verbose=0):
         '''
@@ -74,23 +78,21 @@ class Game:
         
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         while True:
-        #for i, m in enumerate(self.moves()):
-            moveWhite = self.getNextMove(Wh)
             self.movenum += 1
-            if verbose: print(self.movenum,moveWhite)
+            
+            (startW,endW) = self.makeMove(startB,endB,Wh)
+            
+            if savestates:
+                states.append(self.board.copy())
 
-            (startW, endW) = self.makeMove(moveWhite, Wh, startB, endB)
+            (startB,endB) = self.makeMove(startW,endW,Bl)
+
             if savestates:
                 states.append(self.board.copy())
             
-            moveBlack = self.getNextMove(Bl)
-            (startB, endB) = self.makeMove(moveBlack, Bl, startW, endW)
-            
-            if savestates:
-                states.append(self.board.copy())
             
             if True:#verbose >= 2:
-                print("\n", moveWhite,"\n",moveBlack)
+                print("\nmoves:", startW,endW,"\n",startB,endB)
                 print_board(self.board)
         
         if savestates:
@@ -104,11 +106,10 @@ class Game:
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
     
-    def makeMove(self, chessNotation, team, prevTurnStart, prevTurnEnd):
+    def makeMove(self, prevTurnStart, prevTurnEnd, team):
         # Pass in team's move in standard chess notation and team's team 
         # code to extract starting and ending positions.
-        (boardTurnStart, boardTurnEnd), enpassant_flag = self.clarifyMove(chessNotation, team, prevTurnStart, prevTurnEnd)
-        # Update the board
+        (boardTurnStart, boardTurnEnd), enpassant_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
         self.movePiece(boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
         return boardTurnStart, boardTurnEnd
 
@@ -446,8 +447,8 @@ def translateMoveToChessNotation(move):
     piece = reversePiece[move[0]]
     if piece == 'P':
         piece = ''
-    row = move[1]
-    col = reverseCoord[move[2]]
+    row = move[3]
+    col = reverseCoord[move[4]]
     return piece + str(col) + str(row)
 
 def setCoord(board, c1, c2, val):
