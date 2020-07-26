@@ -50,9 +50,11 @@ class Game:
 
     def getNextMove(self,before,after,team):
         if team == self._cpTeam:
-            return self.getNextComputerMove(team)
+            move = self.getNextComputerMove(team)
         else:
-            return self.getNextUserMove(before,after,team)
+            move = self.getNextUserMove(before,after,team)
+        print("move: ", print_coord(move[0][0]),print_coord(move[0][1]))
+        return move
 
     def getNextUserMove(self,before,after,team):
         move = input("move:")
@@ -228,7 +230,7 @@ class Game:
         # If not castling or promoting a pawn, the move ends on the last two 
         # coordinates
         if move != 'O-O' and move != 'O-O-O' and '=' not in move:
-            
+            move = move.replace("-","")            
             # Note this coordinate is in range 1 <= end[i] <= 8
             # and end[0] is a file
             # and end[1] is a rank
@@ -250,14 +252,14 @@ class Game:
             return (start, end), False
                
         #capture -- does not include en'passant
-        if move[0] in coord.keys():
+        if move[0] in rankLetterToCol.keys():
             if '=' in move:
                 if len(move) == 4:
                     return ([int(move[1]) - team, rankLetterToCol[move[0]]], [int(move[1]), rankLetterToCol[move[0]]]), False
                 else:
                     return ([int(move[3]) - team, rankLetterToCol[move[0]]], [int(move[3]), rankLetterToCol[move[2]]]), False
 
-            if 'x' in move:
+            if 'x' in move or move[1] != move[3]:
                 if len(move) == 5:
                     move = move.replace('x','')
                 output = ([end[1] - team, rankLetterToCol[move[0]]], end)
@@ -464,3 +466,7 @@ def setCoord(board, c1, c2, val):
     if c2 < 0: c2 += 9
     board[c2-1, c1-1] = val
     return board
+
+def print_coord(coord):
+    out = colToRankLetter[coord[1]] + str(coord[0])
+    return out
