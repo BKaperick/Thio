@@ -114,7 +114,7 @@ class Game:
         # code to extract starting and ending positions.
         (boardTurnStart, boardTurnEnd), enpassant_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
         # update board
-        self.movePiece(boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
+        movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
         return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
@@ -363,47 +363,47 @@ class Game:
 
         return(start,end), False
 
-    def movePiece(self, start, end, team, enpassant = False):
-        '''
-        Given a start and end coordinates (2-lists) and a team 
-        distinction, the board gets updated accordingly.
-        '''
-        
-        # Regardless of any other movements, all fresh pawns are converted to regular pawns.
-        for x,y in zip(*np.where(self.board*team > 0)):
-            if self.board[x,y] == team*fP:
-                self.board[x,y] = team*P
-        
-        #Special case of a promotion (assumes to queen)
-        if end[0] == 8 and on_board_wraparound(self.board, *start) == P or end[0] == 1 and on_board_wraparound(self.board, *start) == -P:
-            setCoord(self.board, *end, team*Q)
-        else:
-            # In the case of double-moving pawn (special case to allow en'passant on it)
-            if on_board_wraparound(self.board, *start) == team*P and abs(end[0] - start[0]) == 2:
-                setCoord(self.board, *end, team*fP)
-
-            # All other basic moves
-            else:
-                #Replace destination with moving piece
-                setCoord(self.board, *end, on_board_wraparound(self.board, *start))
-        
-        # Remove the pawn that has been en'passanted
-        if enpassant:
-            setCoord(self.board, end[1], end[0] - team, empty)
-        
-        #Replace starting place with empty
-        setCoord(self.board, *start, empty)
-
-        #Handles the rook move in the case of castling
-        if on_board_wraparound(self.board,*end) == team*K and abs(end[1] - start[1]) > 1:
-            if end[1] == 7:
-                setCoord(self.board, team, 6, team*R)
-                setCoord(self.board, team, 8, empty)
-            elif end[1] == 3:            
-                setCoord(self.board, team, 4, team*R)
-                setCoord(self.board, team, 1, empty)
 
 # Helper functions
+def movePiece(board, start, end, team, enpassant = False):
+    '''
+    Given a start and end coordinates (2-lists) and a team 
+    distinction, the board gets updated accordingly.
+    '''
+    
+    # Regardless of any other movements, all fresh pawns are converted to regular pawns.
+    for x,y in zip(*np.where(board*team > 0)):
+        if board[x,y] == team*fP:
+            board[x,y] = team*P
+    
+    #Special case of a promotion (assumes to queen)
+    if end[0] == 8 and on_board_wraparound(board, *start) == P or end[0] == 1 and on_board_wraparound(board, *start) == -P:
+        setCoord(board, *end, team*Q)
+    else:
+        # In the case of double-moving pawn (special case to allow en'passant on it)
+        if on_board_wraparound(board, *start) == team*P and abs(end[0] - start[0]) == 2:
+            setCoord(board, *end, team*fP)
+
+        # All other basic moves
+        else:
+            #Replace destination with moving piece
+            setCoord(board, *end, on_board_wraparound(board, *start))
+    
+    # Remove the pawn that has been en'passanted
+    if enpassant:
+        setCoord(board, end[1], end[0] - team, empty)
+    
+    #Replace starting place with empty
+    setCoord(board, *start, empty)
+
+    #Handles the rook move in the case of castling
+    if on_board_wraparound(board,*end) == team*K and abs(end[1] - start[1]) > 1:
+        if end[1] == 7:
+            setCoord(board, team, 6, team*R)
+            setCoord(board, team, 8, empty)
+        elif end[1] == 3:            
+            setCoord(board, team, 4, team*R)
+            setCoord(board, team, 1, empty)
 
 def on_board_wraparound(board, c1, c2):
     '''
@@ -480,3 +480,6 @@ def setCoord(board, c1, c2, val):
 def print_coord(coord):
     out = colToRankLetter[coord[1]] + str(coord[0])
     return out
+
+def print_move(move):
+    return pieceValToStr[move[0]] + print_coord(move[1:3]) + " " + print_coord(move[3:5])
