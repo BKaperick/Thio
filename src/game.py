@@ -47,25 +47,15 @@ class Game:
 
         self.movenum = 0
 
-    def moves(self):
-        while self.result == '':
-            if self._cpTeam == Wh:
-                whiteMove = self.translateMoveToChessNotation(self.movemaker(self.board,Wh))
-                blackMove = input("move:")
-
-            else:
-                whiteMove = input("move:")
-                blackMove = self.translateMoveToChessNotation(self._movemaker(self.board,Bl))
-            yield (whiteMove,blackMove)
+    #def getNextMove(self,prevTurnBefore,prevTurnAfter,team):
+    def getNextMove(self,team):
+        if self._cpTeam == team:
+            move = self._movemaker(self.board,self._cpTeam)
+            moveCN = translateMoveToChessNotation(move)
+        else:
+            moveCN = input("move:")
+        return moveCN
     
-    def translateMoveToChessNotation(self,move):
-        piece = reversePiece[move[0]]
-        if piece == 'P':
-            piece = ''
-        row = move[1]
-        col = reverseCoord[move[2]]
-        return piece + str(col) + str(row)
-
     def runGame(self, savestates=True, verbose=0):
         '''
         INPUT
@@ -83,22 +73,24 @@ class Game:
         startB, endB = '', ''
         
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
-        for i, m in enumerate(self.moves()):
-            if verbose: print(i,m)
+        while True:
+        #for i, m in enumerate(self.moves()):
+            moveWhite = self.getNextMove(Wh)
             self.movenum += 1
+            if verbose: print(self.movenum,moveWhite)
 
-            print("move received:",m)                
-            (startW, endW) = self.makeMove(m[0], Wh, startB, endB)
+            (startW, endW) = self.makeMove(moveWhite, Wh, startB, endB)
             if savestates:
                 states.append(self.board.copy())
-
-            (startB, endB) = self.makeMove(m[1], Bl, startW, endW)
+            
+            moveBlack = self.getNextMove(Bl)
+            (startB, endB) = self.makeMove(moveBlack, Bl, startW, endW)
             
             if savestates:
                 states.append(self.board.copy())
             
             if True:#verbose >= 2:
-                print("\n", m)
+                print("\n", moveWhite,"\n",moveBlack)
                 print_board(self.board)
         
         if savestates:
@@ -218,6 +210,8 @@ class Game:
         '''
         move - string containing standard chess notation for the move
         team - corresponds to one of the two team codes
+        prev_move_start - 
+        prev_move_end - 
 
         Returns a 2-tuple of the moving pieces
         '''
@@ -376,20 +370,20 @@ class Game:
             return None
 
     #Sets the board position to val
-    def setCoord(self, c1, c2, val):
-        '''
-        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
-        the specified board position and updates self.board with val at this 
-        position.  Negative indices are treated such that -1 maps to 8, -2 maps
-        to 7, etc.  This functionality is only used when
-        handling castling and promotions symmetrically.
-        
-        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
-        position which is out of bounds, so None is returned.
-        '''
-        if c1 < 0: c1 += 9
-        if c2 < 0: c2 += 9
-        self.board[c1-1, c2-1] = val
+#    def setCoord(self, c1, c2, val):
+#        '''
+#        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+#        the specified board position and updates self.board with val at this 
+#        position.  Negative indices are treated such that -1 maps to 8, -2 maps
+#        to 7, etc.  This functionality is only used when
+#        handling castling and promotions symmetrically.
+#        
+#        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+#        position which is out of bounds, so None is returned.
+#        '''
+#        if c1 < 0: c1 += 9
+#        if c2 < 0: c2 += 9
+#        self.board[c1-1, c2-1] = val
 
     def movePiece(self, start, end, team, enpassant = False):
         '''
@@ -405,32 +399,34 @@ class Game:
         
         #Special case of a promotion (assumes to queen)
         if end[1] == 8 and self.coord(*start) == P or end[1] == 1 and self.coord(*start) == -P:
-            self.setCoord(*end, team*Q)
+            setCoord(self.board, *end, team*Q)
         else:
             # In the case of double-moving pawn (special case to allow en'passant on it)
             if self.coord(*start) == team*P and abs(end[1] - start[1]) == 2:
-                self.setCoord(*end, team*fP)
+                setCoord(self.board, *end, team*fP)
 
             # All other basic moves
             else:
                 #Replace destination with moving piece
-                self.setCoord(*end, self.coord(*start))
+                setCoord(self.board, *end, self.coord(*start))
         
         # Remove the pawn that has been en'passanted
         if enpassant:
-            self.setCoord(end[0], end[1] - team, empty)
+            setCoord(self.board, end[0], end[1] - team, empty)
         
         #Replace starting place with empty
-        self.setCoord(*start, empty)
+        setCoord(self.board, *start, empty)
 
         #Handles the rook move in the case of castling
         if self.coord(*end) == team*K and abs(end[0] - start[0]) > 1:
             if end[0] == 7:
-                self.setCoord(6, team, team*R)
-                self.setCoord(8, team, empty)
+                setCoord(self.board, 6, team, team*R)
+                setCoord(self.board, 8, team, empty)
             elif end[0] == 3:
-                self.setCoord(4, team, team*R)
-                self.setCoord(1, team, empty)
+                setCoord(self.board, 4, team, team*R)
+                setCoord(self.board, 1, team, empty)
+
+# Helper functions
 
 def print_board(board):
     ''' Print board in a human-readable format. '''
@@ -446,4 +442,26 @@ def print_board(board):
         print(i+1,r)
     print('\n')
 
+def translateMoveToChessNotation(move):
+    piece = reversePiece[move[0]]
+    if piece == 'P':
+        piece = ''
+    row = move[1]
+    col = reverseCoord[move[2]]
+    return piece + str(col) + str(row)
 
+def setCoord(board, c1, c2, val):
+    '''
+    Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+    the specified board position and updates self.board with val at this 
+    position.  Negative indices are treated such that -1 maps to 8, -2 maps
+    to 7, etc.  This functionality is only used when
+    handling castling and promotions symmetrically.
+    
+    c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+    position which is out of bounds, so None is returned.
+    '''
+    if c1 < 0: c1 += 9
+    if c2 < 0: c2 += 9
+    board[c1-1, c2-1] = val
+    return board

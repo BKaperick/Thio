@@ -52,11 +52,12 @@ class HistoricalGame(Game):
 
         self.movenum = 0
    
-    def moves(self):
-        for m in self._moves:
-            yield m
-
-
+    def getNextMove(self,team):
+        move = self._moves[self.movenum]
+        if team == Wh:
+            return move[0]
+        else:
+            return move[1]
 
 
 

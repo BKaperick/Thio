@@ -343,7 +343,7 @@ def possible_moves(board, team, pieceloc = None):
         piece_locs = {pieceloc}
     else:
         piece_locs = zip(*np.where(board*team > 0))
-    piece_locs = ((y+1,x+1) for x,y in piece_locs)
+        piece_locs = ((y+1,x+1) for x,y in piece_locs)
 
     moves = set()
     for x,y in piece_locs:
