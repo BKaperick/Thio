@@ -52,12 +52,12 @@ class HistoricalGame(Game):
 
         self.movenum = 0
    
-    def getNextMove(self,team):
-        move = self._moves[self.movenum]
+    def getNextMove(self,_,__,team):
+        notation = self._moves[self.movenum]
         if team == Wh:
-            return move[0]
+            return self.clarifyMove(notation[0],team,_,__)
         else:
-            return move[1]
+            return self.clarifyMove(notation[1],team,_,__)
 
 
 

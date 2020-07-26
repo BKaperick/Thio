@@ -1,4 +1,5 @@
 import numpy as np
+from chess import *
 
 Wh = 1
 Bl = -1
@@ -257,7 +258,8 @@ class Game:
                     return ([int(move[3]) - team, coord[move[0]]], [int(move[3]), coord[move[2]]]), False
 
             if 'x' in move:
-                move = move.replace('x','')
+                if len(move) == 5:
+                    move = move.replace('x','')
                 output = ([end[1] - team, coord[move[0]]], end)
                 # En'passant
                 if coord[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:
