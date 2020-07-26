@@ -208,7 +208,7 @@ class Game:
         move = move.replace('x','')
         if len(move) == 2 or len(move) == 4:
             move = move.lower()
-        if len(move) == 3:
+        if len(move) == 3 and move != "O-O":
             move = move[0] + move[1:].lower()
 
         start = [None, None]

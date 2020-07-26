@@ -60,20 +60,20 @@ def alphabeta_move(board,team):
     move,score = alphabeta(board,MAXDEPTH,team)
     return (move[1:3],move[3:5]),False
 
-alphabeta_costeffective_move.movenum = 0
 def alphabeta_adj_move(board,team):
-    alphabeta_costeffective_move.movenum += 1
+    alphabeta_adj_move.movenum += 1
     depth = 3
     minscores = []
     score = score_board(board)
 
     if team*score < -5:
         depth += 1
-    if alphabeta_costeffective_move.movenum < 8:
+    if alphabeta_adj_move.movenum < 8:
         depth -= 1
     
     move,score = alphabeta(board,depth,team)
     return (move[1:3],move[3:5]),False
+alphabeta_adj_move.movenum = 0
     
 
 def real_possible_moves(board,team,depth):

@@ -32,7 +32,6 @@ if __name__ == "__main__":
         # Create new human-vs-computer game with the computer as `team`, using `random_move` to make its moves
         #game = Game(team, random_move)
         game = Game(team, alphabeta_adj_move)
-)
         game.runGame()
     
     else:
