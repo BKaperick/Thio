@@ -434,7 +434,10 @@ def print_board(board,perspective = Bl):
     else:
         print('A    B    C    D    E    F    G    H    '[::-1])
     for i,r in enumerate(printedBoard):
-        print(i+1,r)
+        if perspective == Wh:
+            print(8-i,r)
+        else:
+            print(i+1,r)
     print('\n')
 
 def translateMoveToChessNotation(move):
