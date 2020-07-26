@@ -21,8 +21,8 @@ piece = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
 reversePiece = {v:k for k,v in piece.items()}
 
 # a:1, ..., h:8
-coord = {chr(i):i-96 for i in range(97,105)}
-reverseCoord = {v:k for k,v in coord.items()}
+rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
+colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
 
 class Game:
     def __init__(self, cpTeam, movemaker):
@@ -194,7 +194,7 @@ class Game:
         # If there are multiple options and move supposes there should be no
         # ambiguity by only listing two coordinates (4 characters)
         if len(starts) > 1 and len(move) == 4:
-                if starts[0][0] == coord[move[1]]:
+                if starts[0][0] == rankLetterToCol[move[1]]:
                     start = starts[0]
                 else:
                     start = starts[1]
@@ -232,7 +232,7 @@ class Game:
             # Note this coordinate is in range 1 <= end[i] <= 8
             # and end[0] is a file
             # and end[1] is a rank
-            end = [int(move[-1]), coord[move[-2]]]
+            end = [int(move[-1]), rankLetterToCol[move[-2]]]
 
         ##########
         #  PAWN
@@ -253,16 +253,16 @@ class Game:
         if move[0] in coord.keys():
             if '=' in move:
                 if len(move) == 4:
-                    return ([int(move[1]) - team, coord[move[0]]], [int(move[1]), coord[move[0]]]), False
+                    return ([int(move[1]) - team, rankLetterToCol[move[0]]], [int(move[1]), rankLetterToCol[move[0]]]), False
                 else:
-                    return ([int(move[3]) - team, coord[move[0]]], [int(move[3]), coord[move[2]]]), False
+                    return ([int(move[3]) - team, rankLetterToCol[move[0]]], [int(move[3]), rankLetterToCol[move[2]]]), False
 
             if 'x' in move:
                 if len(move) == 5:
                     move = move.replace('x','')
-                output = ([end[1] - team, coord[move[0]]], end)
+                output = ([end[1] - team, rankLetterToCol[move[0]]], end)
                 # En'passant
-                if coord[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:
+                if rankLetterToCol[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:
                    return output, True 
                 return output, False
         
@@ -278,8 +278,8 @@ class Game:
         if p == R:
             starts = self.checkStraights(end, team)
             if len(move) == 4:
-                if move[1] in coord.keys():
-                    starts = [m for m in starts if m[0] == coord[move[1]]]
+                if move[1] in rankLetterToCol.keys():
+                    starts = [m for m in starts if m[0] == rankLetterToCol[move[1]]]
                 else:
                     starts = [m for m in starts if m[1] == int(move[1])]
             start = self.ambiguous(starts, move)
@@ -302,8 +302,8 @@ class Game:
 
             #If additional context is needed to clarify
             if len(move) == 4:
-                if move[1] in coord.keys():
-                    starts = [m for m in starts if m[1] == coord[move[1]]]
+                if move[1] in rankLetterToCol.keys():
+                    starts = [m for m in starts if m[1] == rankLetterToCol[move[1]]]
                 else:
                     starts = [m for m in starts if m[0] == int(move[1])]
             start = self.ambiguous(starts, move)
@@ -442,7 +442,7 @@ def translateMoveToChessNotation(move):
     if piece == 'P':
         piece = ''
     row = move[3]
-    col = reverseCoord[move[4]]
+    col = colToRankLetter[move[4]]
     return piece + str(col) + str(row)
 
 def setCoord(board, c1, c2, val):
