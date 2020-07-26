@@ -1,5 +1,5 @@
 
-# ./chess.py
+# chess.py
 ## is_valid_move(start, end, team, verbose=0)
 >     INPUT
 >     start -- array shaped (8,8) containing a board state
@@ -63,14 +63,14 @@
 >         `board` on the specified `team` are computed.  Else, only `pieceloc`'s 
 >         moves are computed
 >     RETURN
->     moves -- a set of 3-tuples of the form (piece-identifier-at-end-of-move, 
+>     moves -- a set of 5-tuples of the form (piece-identifier-at-end-of-move, 
 >         end-row, end-col) denoting the spaces `pieceloc` piece/team can reach
 >     NOTE 
 >     * this function does not remove moves which reveal checks illegally,
 >     or moves that fail to respond to an active check threat.
 
 ## castling_moves(board, team)
->     Returns 3-tuples flagged 'castle' in the first position for each possible
+>     Returns 5-tuples flagged 'castle' in the first position for each possible
 >     castling move in this board state by this team. 
 >     Note: This function does not check whether the castling violates check.
 
@@ -79,24 +79,25 @@
 >     board -- 2d array storing board state
 >     team -- +/- 1 indicating on which team this piece is
 >     RETURN 
->     * 3-tuples flagged 'pass left' or 'pass right' in the first position
+>     * 5-tuples flagged 'pass left' or 'pass right' in the first position
 >     for each possible en'passant move in this board state by this team
 
 ## move_to_string(piece, row, col,justloc=0)
 ## on_board(board, row, col)
 >     INPUT
 >     board -- 2d array storing board state
->     row -- a file (column) on [1,8]
->     col -- a rank (row) on [1,8]
+>     row -- a rank (row) on [1,8]
+>     col -- a file (column) on [1,8]
 >     RETURN
 >     The piece on `board` at the specified row and column, or `None` if the 
 >     coordinates are invalid.
 
+## piece_locations_for_team(board,team)
 ## moves_on_board(move_tuple)
 >     INPUT
->     move_tuple -- an array of 3-tuples containing a piece code, a row, and a column.
+>     move_tuple -- an array of 5-tuples containing a piece code, a row, and a column.
 >     RETURN
->     * Set of tuples with row and column indices within 0,...,7 range.
+>     * Set of tuples with row and column indices within 1,...,8 range.
 
 ## pawn_move(board, row, col, team)
 >     INPUT
@@ -153,7 +154,13 @@
 >     moves -- set of three tuples of the form [piece, landing_x, landing_y]
 
 
-# ./retrograde.py
+# retrograde.py
+## piece_count(board, team)
+>     {board: [], start: (piece, row, col), end: (piece, row, col)}
+>     ('enpassant', row, col)
+>     ('OO', kingrow, kingcol)
+>     ('OOO', kingrow, kingcol)
+
 ## retrograde(board, team, nmoves = 1)
 >     INPUT
 >     board -- the board object at the current move
@@ -171,13 +178,11 @@
 >     (2) See how many pieces are missing from opposite team and repeat (1) with taken pieces
 >     (3) Special moves like castling/enpassant
 
+## backwards_move_to_board(board, start, end)
 
-# ./read_pgn.py
-> TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
-> TODO: Handle en'passant by making pawns "fresh pawns" for exactly one move after a double move.
-
+# game.py
 ## Game
-###     __init__(self, result, moves)
+###     __init__(self, cpTeam, movemaker)
 >         INPUT
 >         result -- a string '1' or '0' or '1/2' indicating the game result
 >         moves -- a list of moves alternating between white and black moves each 
@@ -188,6 +193,9 @@
 >         self.board[i,j] is the ith rank (row) and jth file (column), each
 >         indexed from 0-7
 
+###     getNextMove(self,before,after,team)
+###     getNextUserMove(self,before,after,team)
+###     getNextComputerMove(self,team)
 ###     runGame(self, savestates=True, verbose=0)
 >         INPUT
 >         savestates -- if is True, the board is deep-copied after each board change.
@@ -198,8 +206,10 @@
 >         states -- if savestates is True, an array of board states detailing the 
 >             history of the game, else None
 
+###     createCleanBoard(self)
+###     makeMove(self, prevTurnStart, prevTurnEnd, team)
 ###     checkStraights(self, end, team, piece=R)
->         Given an end coordinate on range [1,8] and a team/piece, returns a list 
+>         Given an end coordinate (row,col) on range [1,8] and a team/piece, returns a list 
 >         of all pieces of this team and this piece type which could have reached 
 >         end with a straight movement.
 
@@ -216,31 +226,60 @@
 ###     clarifyMove(self, move, team, prev_move_start, prev_move_end)
 >         move - string containing standard chess notation for the move
 >         team - corresponds to one of the two team codes
+>         prev_move_start - 
+>         prev_move_end - 
 >         Returns a 2-tuple of the moving pieces
-
-###     coord(self, c1, c2)
->         Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
->         the specified board position.  Negative indices are treated such that 
->         -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
->         handling castling and promotions symmetrically.
->         c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
->         position which is out of bounds, so None is returned.
->         c1 is a file
->         c2 is a rank
-
-###     setCoord(self, c1, c2, val)
->         Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
->         the specified board position and updates self.board with val at this 
->         position.  Negative indices are treated such that -1 maps to 8, -2 maps
->         to 7, etc.  This functionality is only used when
->         handling castling and promotions symmetrically.
->         c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
->         position which is out of bounds, so None is returned.
 
 ###     movePiece(self, start, end, team, enpassant = False)
 >         Given a start and end coordinates (2-lists) and a team 
 >         distinction, the board gets updated accordingly.
 
+## on_board_wraparound(board, c1, c2)
+>     INPUT
+>     row,col
+>     Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+>     the specified board position.  Negative indices are treated such that 
+>     -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
+>     handling castling and promotions symmetrically.
+>     c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+>     position which is out of bounds, so None is returned.
+>     c1 is a file
+>     c2 is a rank
+
+## print_board(board,perspective = Bl)
+    Print board in a human-readable format.
+## translateMoveToChessNotation(move)
+## setCoord(board, c1, c2, val)
+>     INPUT is in (row,col) format
+>     Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+>     the specified board position and updates self.board with val at this 
+>     position.  Negative indices are treated such that -1 maps to 8, -2 maps
+>     to 7, etc.  This functionality is only used when
+>     handling castling and promotions symmetrically.
+>     c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+>     position which is out of bounds, so None is returned.
+
+## print_coord(coord)
+
+# test.py
+
+# read_pgn.py
+> TODO: Add more data files and seamless reading of multiple files.  (Ideally all .pgn's in ../data directory).
+> TODO: Handle en'passant by making pawns "fresh pawns" for exactly one move after a double move.
+
+## HistoricalGame(Game)
+###     __init__(self, result, moves)
+>         INPUT
+>         result -- a string '1' or '0' or '1/2' indicating the game result
+>         moves -- a list of moves alternating between white and black moves each 
+>         given as a string of standard chess notation.
+>         RETURN
+>         self -- Game instance
+>         Also builds the board to the initial setup ready for simulation.
+>         self.board[i,j] is the ith rank (row) and jth file (column), each
+>         indexed from 0-7
+
+###     getNextMove(self,_,__,team)
 ## diffs(board1, board2)
 >     INPUT
 >     board1 -- a 2d array board state
@@ -252,8 +291,6 @@
 >     final_indices -- an array with two arrays [row indices, col indices]
 >         pointing to differences between the two inputted boards
 
-## print_board(board)
-    Print board in a human-readable format.
 ## parsePGN(fname, start_count = 0, max_count = 0, verbose=False)
 >     INPUT
 >     fname -- string name of PGN file
@@ -280,7 +317,12 @@
 >     games in `fname` may be for that reason.  
 
 
-# ./main.py
+# play.py
+## random_move(board,team)
+## score_board(board,team)
+## hypothetical_board(board,move)
+
+# main.py
 ## gen_pairs(games, start_count = 0)
 >     INPUT
 >     games -- a list of game states
@@ -288,7 +330,7 @@
 >     state -- 
 
 
-# ./game_wrapper.py
+# game_wrapper.py
 ## iter_2d(arr)
 ## build_data_with_labels(game)
 ## vectorize(board)
