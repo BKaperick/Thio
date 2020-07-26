@@ -434,8 +434,8 @@ def on_board(board, row, col):
     '''
     INPUT
     board -- 2d array storing board state
-    row -- a file (column) on [1,8]
-    col -- a rank (row) on [1,8]
+    row -- a rank (row) on [1,8]
+    col -- a file (column) on [1,8]
 
     RETURN
     The piece on `board` at the specified row and column, or `None` if the 
@@ -456,7 +456,7 @@ def moves_on_board(move_tuple):
     move_tuple -- an array of 5-tuples containing a piece code, a row, and a column.
     
     RETURN
-    * Set of tuples with row and column indices within 0,...,7 range.
+    * Set of tuples with row and column indices within 1,...,8 range.
     '''
     return set([(p,r1,c1,r2,c2) for p,r1,c1,r2,c2 in move_tuple if 1 <= r2 <= 8 and 1 <= c2 <= 8])
 

@@ -127,7 +127,7 @@ class Game:
 
         # Row to left of end coordinate
         for i in range(end[1]-1,0,-1):
-            p = self.coord(end[0], i)
+            p = on_board_wraparound(self.board, end[0], i)
             if  p == team*piece:
                 starts.append([end[0], i])
             if p != empty:
@@ -135,19 +135,19 @@ class Game:
         
         # Row to right of end coordinate
         for i in range(end[1]+1,9):
-            p = self.coord(end[0], i)
+            p = on_board_wraparound(self.board, end[0], i)
             if  p == team*piece:
                 starts.append([end[0], i])
             if p != empty:
                 break
         for i in range(end[0]-1,0,-1):
-            p = self.coord(i, end[1])
+            p = on_board_wraparound(self.board, i, end[1])
             if p == team*piece:
                 starts.append([i, end[1]])
             if p != empty:
                 break
         for i in range(end[0]+1,9):
-            p = self.coord(i, end[1])
+            p = on_board_wraparound(self.board, i, end[1])
             if p == team*piece:
                 starts.append([i, end[1]])
             if p != empty:
@@ -178,10 +178,10 @@ class Game:
             if len(indices) == 0:
                 break
             for i in indices:
-                if self.coord(*(p[i])) == team*piece:
+                if on_board_wraparound(self.board, *(p[i])) == team*piece:
                     starts.append(p[i])
                     r.append(i) 
-                elif self.coord(*(p[i])) != empty:
+                elif on_board_wraparound(self.board, *(p[i])) != empty:
                     r.append(i)
             indices = [i for i in indices if i not in r]
         return starts
@@ -255,7 +255,7 @@ class Game:
             start = [end[0] - team, end[1]]
 
             #If start is incorrect
-            if self.coord(*start) != team*P and self.coord(*start) != team*fP:
+            if on_board_wraparound(self.board, *start) != team*P and on_board_wraparound(self.board, *start) != team*fP:
                 print("adjust")
                 start[0] -= team
             return (start, end), False
@@ -305,8 +305,8 @@ class Game:
             starts = []
             for i in range(-2,3,4):
                 for j in range(-1,2,2):
-                    p1 = self.coord(end[0] + i, end[1] + j)
-                    p2 = self.coord(end[0] + j, end[1] + i)
+                    p1 = on_board_wraparound(self.board, end[0] + i, end[1] + j)
+                    p2 = on_board_wraparound(self.board, end[0] + j, end[1] + i)
                     if p1 == team*N:
                         starts.append([end[0]+i,end[1]+j])
                     if p2 == team*N:
@@ -349,7 +349,7 @@ class Game:
             for direction in lrup + diags:
                 crd = [end[0] + direction[0], end[1] + direction[1]] # Relative coordinates (-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1),(1,-1),(1,0),(1,1)
 
-                if self.coord(*crd) == team*K:
+                if on_board_wraparound(self.board, *crd) == team*K:
                     start = crd
                     break 
         #Castling
@@ -363,53 +363,29 @@ class Game:
 
         return(start,end), False
 
-    def coord(self, c1, c2):
-        '''
-        INPUT
-        row,col
-        Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
-        the specified board position.  Negative indices are treated such that 
-        -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
-        handling castling and promotions symmetrically.
-        
-        c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
-        position which is out of bounds, so None is returned.
-
-        c1 is a file
-        c2 is a rank
-        '''
-        if c1==0 or c2==0: return None
-        if c1 < 0: c1 += 9
-        if c2 < 0: c2 += 9
-        try:
-            return self.board[c2-1, c1-1]
-        except IndexError:
-            return None
-
     def movePiece(self, start, end, team, enpassant = False):
         '''
         Given a start and end coordinates (2-lists) and a team 
         distinction, the board gets updated accordingly.
         '''
-        #print("mp: ",start, end, team, enpassant)
-        #print_board(self.board)
+        
         # Regardless of any other movements, all fresh pawns are converted to regular pawns.
         for x,y in zip(*np.where(self.board*team > 0)):
             if self.board[x,y] == team*fP:
                 self.board[x,y] = team*P
         
         #Special case of a promotion (assumes to queen)
-        if end[0] == 8 and self.coord(*start) == P or end[0] == 1 and self.coord(*start) == -P:
+        if end[0] == 8 and on_board_wraparound(self.board, *start) == P or end[0] == 1 and on_board_wraparound(self.board, *start) == -P:
             setCoord(self.board, *end, team*Q)
         else:
             # In the case of double-moving pawn (special case to allow en'passant on it)
-            if self.coord(*start) == team*P and abs(end[0] - start[0]) == 2:
+            if on_board_wraparound(self.board, *start) == team*P and abs(end[0] - start[0]) == 2:
                 setCoord(self.board, *end, team*fP)
 
             # All other basic moves
             else:
                 #Replace destination with moving piece
-                setCoord(self.board, *end, self.coord(*start))
+                setCoord(self.board, *end, on_board_wraparound(self.board, *start))
         
         # Remove the pawn that has been en'passanted
         if enpassant:
@@ -419,7 +395,7 @@ class Game:
         setCoord(self.board, *start, empty)
 
         #Handles the rook move in the case of castling
-        if self.coord(*end) == team*K and abs(end[1] - start[1]) > 1:
+        if on_board_wraparound(self.board,*end) == team*K and abs(end[1] - start[1]) > 1:
             if end[1] == 7:
                 setCoord(self.board, team, 6, team*R)
                 setCoord(self.board, team, 8, empty)
@@ -428,6 +404,29 @@ class Game:
                 setCoord(self.board, team, 1, empty)
 
 # Helper functions
+
+def on_board_wraparound(board, c1, c2):
+    '''
+    INPUT
+    row,col
+    Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
+    the specified board position.  Negative indices are treated such that 
+    -1 maps to 8, -2 maps to 7, etc.  This functionality is only used when
+    handling castling and promotions symmetrically.
+    
+    c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+    position which is out of bounds, so None is returned.
+
+    c1 is a file
+    c2 is a rank
+    '''
+    if c1==0 or c2==0: return None
+    if c1 < 0: c1 += 9
+    if c2 < 0: c2 += 9
+    try:
+        return on_board(board,c1,c2)
+    except IndexError:
+        return None
 
 def print_board(board,perspective = Bl):
     ''' Print board in a human-readable format. '''
@@ -441,10 +440,11 @@ def print_board(board,perspective = Bl):
                 printedBoard[7-j][i] = remap[board[i][j]]
             else:
                 printedBoard[j][7-i] = remap[board[i][j]]
+    row_header = '     A    B    C    D    E    F    G    H'
     if perspective == Wh:
-        print('     A    B    C    D    E    F    G    H')
+        print(row_header)
     else:
-        print('A    B    C    D    E    F    G    H    '[::-1])
+        print(row_header[::-1])
     for i,r in enumerate(printedBoard):
         if perspective == Wh:
             print(8-i,r)

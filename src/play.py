@@ -3,7 +3,7 @@ from game import *
 import random
 
 def random_move(board,team):
-    print("SCORE:",score_board(board))
+    print("SCORE:",score_board(board,team))
     threats = list(possible_moves(board,-team))
     maxValue = 0
     pos = (-1,-1)
@@ -26,13 +26,21 @@ def random_move(board,team):
     #return (move[1:3][::-1],move[3:5][::-1]),False
     return (move[1:3],move[3:5]),False
 
-def score_board(board):
+def score_board(board,team):
     total = 0
     for row in board:
         for elem in row:
             sign = (int(elem>0)-.5)*2
             total += sign * pieceValue[abs(elem)]
+    
+    threats = list(possible_moves(board,-team))
+
+
     return total
+
+def hypothetical_board(board,move):
+    local_board = board.copy()
+
 
 pieceValue = {P : 1,
        fP : 1,
