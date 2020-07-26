@@ -92,9 +92,9 @@ class Game:
                 states.append(self.board.copy())
             
             
-            if True:#verbose >= 2:
-                print("\nmoves:", startW,endW,"\n",startB,endB)
-                print_board(self.board)
+            if verbose >= 0:
+                #print("\nmoves:", startW,endW,"\n",startB,endB)
+                print_board(self.board,perspective=-self._cpTeam)
         
         if savestates:
             return states
@@ -104,8 +104,8 @@ class Game:
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
         self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
-        self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
     
     def makeMove(self, prevTurnStart, prevTurnEnd, team):
         
@@ -417,7 +417,7 @@ class Game:
 
 # Helper functions
 
-def print_board(board):
+def print_board(board,perspective = Bl):
     ''' Print board in a human-readable format. '''
     remap = {v:'w' + k for k,v in piece.items()}
     remap.update({-v:'b' + k for k,v in piece.items()})
@@ -425,8 +425,14 @@ def print_board(board):
     printedBoard = np.zeros((8,8), dtype=object)
     for i in range(8):
         for j in range(8):
-            printedBoard[j][i] = remap[board[i][j]]
-    print('     A    B    C    D    E    F    G    H')
+            if perspective == Wh:
+                printedBoard[7-j][i] = remap[board[i][j]]
+            else:
+                printedBoard[j][7-i] = remap[board[i][j]]
+    if perspective == Wh:
+        print('     A    B    C    D    E    F    G    H')
+    else:
+        print('A    B    C    D    E    F    G    H    '[::-1])
     for i,r in enumerate(printedBoard):
         print(i+1,r)
     print('\n')
