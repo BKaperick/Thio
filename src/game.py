@@ -17,8 +17,8 @@ C = 7
 O = 7
 empty = 0
 
-piece = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
-reversePiece = {v:k for k,v in piece.items()}
+pieceStrToVal = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
+pieceValToStr = {v:k for k,v in pieceStrToVal.items()}
 
 # a:1, ..., h:8
 rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
@@ -241,7 +241,7 @@ class Game:
         ##########
 
         # If the move consists of two coordinates, it's a pawn
-        if len(move) == 2:
+        if len(move) == 2 or len(move) == 4:
             p = P
             
             start = [end[0] - team, end[1]]
@@ -259,7 +259,7 @@ class Game:
                 else:
                     return ([int(move[3]) - team, rankLetterToCol[move[0]]], [int(move[3]), rankLetterToCol[move[2]]]), False
 
-            if 'x' in move or move[1] != move[3]:
+            if 'x' in move or move[0] != move[2]:
                 if len(move) == 5:
                     move = move.replace('x','')
                 output = ([end[1] - team, rankLetterToCol[move[0]]], end)
@@ -271,7 +271,7 @@ class Game:
         # Do not need to know if a piece is being taken
         move = move.replace('x','')
         
-        p = piece[move[0]]
+        p = pieceStrToVal[move[0]]
 
         ##########
         #  ROOK
@@ -421,8 +421,8 @@ class Game:
 
 def print_board(board,perspective = Bl):
     ''' Print board in a human-readable format. '''
-    remap = {v:'w' + k for k,v in piece.items()}
-    remap.update({-v:'b' + k for k,v in piece.items()})
+    remap = {v:'w' + k for k,v in pieceStrToVal.items()}
+    remap.update({-v:'b' + k for k,v in pieceStrToVal.items()})
     remap[0] = '  '
     printedBoard = np.zeros((8,8), dtype=object)
     for i in range(8):
@@ -443,7 +443,7 @@ def print_board(board,perspective = Bl):
     print('\n')
 
 def translateMoveToChessNotation(move):
-    piece = reversePiece[move[0]]
+    piece = pieceValToStr[move[0]]
     if piece == 'P':
         piece = ''
     row = move[3]
