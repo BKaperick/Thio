@@ -7,11 +7,11 @@ MAXDEPTH = 4
 def alphabeta(board,maxdepth,team):
     return _alphabeta(board,maxdepth,-1000,1000,team,team)
 
-def _alphabeta(board,depth,alpha,beta,cpTeam,team):
+def _alphabeta(board,depth,alpha,beta,cpTeam,team,verbose=0):
     indent = "    "*(MAXDEPTH - depth)
     if depth == 0:
         score = cpTeam*score_board(board)
-        print(indent,"scoring: ",team, score)
+        if verbose>0:print(indent,"scoring: ",team, score)
         return None, score
     moves = list(real_possible_moves(board,team,depth))
     random.shuffle(moves)
@@ -20,12 +20,11 @@ def _alphabeta(board,depth,alpha,beta,cpTeam,team):
         best_move = None
         for move in moves:
             child_board = hypothetical_board(board,move)
-            print(indent,"move: ", print_move(move))
+            if verbose>0:print(indent,"move: ", print_move(move))
             _,newval = _alphabeta(child_board,depth-1,alpha, beta, cpTeam,-team)
-            print("most dangerous response: ", newval)
             if newval > value:
                 if value > -1000:
-                    print(indent,"(",alpha,"): choosing ",print_move(move)," (",newval,") over ",print_move(best_move)," (",value,")")
+                    if verbose>0:print(indent,"(",alpha,"): choosing ",print_move(move)," (",newval,") over ",print_move(best_move)," (",value,")")
                 best_move = move
                 value = newval
             alpha = max(alpha, value)
@@ -39,11 +38,11 @@ def _alphabeta(board,depth,alpha,beta,cpTeam,team):
         child_board = hypothetical_board(board,move)
         
         # best move for opponent (lowest score)
-        print(indent,"response: ",print_move(move))
+        if verbose>0:print(indent,"response: ",print_move(move))
         _,newval = _alphabeta(child_board, depth-1, alpha, beta, cpTeam,-team)
         if newval < value:
             if value < 1000:
-                print(indent,"(",beta,"): ",print_move(move)," (",newval,") is a stronger response than ",print_move(best_move)," (",value,")")
+                if verbose>0:print(indent,"(",beta,"): ",print_move(move)," (",newval,") is a stronger response than ",print_move(best_move)," (",value,")")
             best_move = move
             value = newval
 
@@ -52,28 +51,26 @@ def _alphabeta(board,depth,alpha,beta,cpTeam,team):
             #print("alpha={0} >= beta={1}",alpha,beta)
             break
     if team != cpTeam:
-        print(indent,"White would play ",print_move(best_move)," since it attains his best score ",value)
+        if verbose>0:print(indent,"White would play ",print_move(best_move)," since it attains his best score ",value)
     return best_move,value
         
-def alphabeta_move(board,team):
+def alphabeta_move(board,team,movenum):
     minscores = []
     move,score = alphabeta(board,MAXDEPTH,team)
     return (move[1:3],move[3:5]),False
 
-def alphabeta_adj_move(board,team):
-    alphabeta_adj_move.movenum += 1
+def alphabeta_adj_move(board,team,movenum):
     depth = 3
     minscores = []
     score = score_board(board)
 
     if team*score < -5:
         depth += 1
-    if alphabeta_adj_move.movenum < 8:
+    if movenum < 8:
         depth -= 1
     
     move,score = alphabeta(board,depth,team)
     return (move[1:3],move[3:5]),False
-alphabeta_adj_move.movenum = 0
     
 
 def real_possible_moves(board,team,depth):
@@ -105,19 +102,19 @@ def score_board(board):
         elif piece == Bl*K:
             foundBlackKing = True
         sign,piece_value = signed_value(piece)
-        #if 2 < row and row < 7 and 2 < col and col < 7:
-        #    piece_value += sign*.05
+        if 2 < row and row < 7 and 2 < col and col < 7:
+            piece_value *= 1.1
         total += piece_value
     if not foundWhiteKing:
         total -= 1000
     if not foundBlackKing:
         total += 1000
 
-#    if on_board(board,1,5) != K:
-#        total -= .1
-#    if on_board(board,8,5) != -K:
-#        total += .1
-    return int(total)
+    if on_board(board,1,5) != K:
+        total -= .1
+    if on_board(board,8,5) != -K:
+        total += .1
+    return total
 
 def hypothetical_board(board,move):
     move = (move[1:3],move[3:5],False)
