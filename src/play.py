@@ -70,7 +70,7 @@ def alphabeta_adj_move(board,team,movenum):
         depth -= 1
     
     move,score = alphabeta(board,depth,team)
-    return (move[1:3],move[3:5]),False
+    return (move[1:3],move[3:5]),False,None
     
 
 def real_possible_moves(board,team,depth):

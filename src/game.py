@@ -39,10 +39,10 @@ class Game:
 
     def getNextUserMove(self,before,after,team):
         move = input("move:")
-        return self.clarifyMove(move, team, before, after)
+        return self.parseMove(move, team, before, after)
 
     def getNextComputerMove(self,team):
-        return self._movemaker(self.board,self._cpTeam)
+        return self._movemaker(self.board,self._cpTeam,self.movenum)
     
     def runGame(self, savestates=True, verbose=0):
         '''
@@ -59,7 +59,8 @@ class Game:
         '''
         states = [self.board.copy()]
         startB, endB = '', ''
-        
+        if verbose >= 0:
+            print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         while True:
             self.movenum += 1
@@ -74,10 +75,10 @@ class Game:
             if savestates:
                 states.append(self.board.copy())
             
-            
             if verbose >= 0:
                 #print("\nmoves:", startW,endW,"\n",startB,endB)
                 print_board(self.board,perspective=-self._cpTeam)
+            
         
         if savestates:
             return states
@@ -86,16 +87,19 @@ class Game:
     def createCleanBoard(self):
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
+        self.board[:,1] = np.array([0,P,P,P,P,P,P,P], dtype=np.int8)
+        #self.board[:,-4] = np.array([0,P,fP,0,0,0,0,0], dtype=np.int8)
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
     
     def makeMove(self, prevTurnStart, prevTurnEnd, team):
         
         # code to extract starting and ending positions.
-        (boardTurnStart, boardTurnEnd), enpassant_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
+        (boardTurnStart, boardTurnEnd), enpassant_flag, promotion_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
+        print("en passant?", enpassant_flag)
+        print("promotion?", promotion_flag)
         # update board
-        movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag)
+        movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag, promotion=promotion_flag)
         return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
@@ -174,25 +178,20 @@ class Game:
         which contains a list of coordinates of pieces which could make 
         the inputted move.
         '''
-        # If there are multiple options and move supposes there should be no
-        # ambiguity by only listing two coordinates (4 characters)
-        if len(starts) > 1 and len(move) == 4:
-                if starts[0][0] == rankLetterToCol[move[1]]:
-                    start = starts[0]
-                else:
-                    start = starts[1]
-        elif len(starts) > 1 and len(move) == 3 and move[0] == 'N':
+        if len(starts) > 1 and len(move) == 3 and move[0] == 'N':
+            print("[WARNING] this decision doesn't make any sense: ", start[1:])
             start = starts[1]
             
         # Simply return the only element from starts if len(starts) == 1, 
         # Or return the first element from starts (sloppy handling).
         else:
+            print("[WARNING] Throwing away moves! ", starts[1:])
             start = starts[0]
 
         return start
 
 
-    def clarifyMove(self, move, team, prev_move_start, prev_move_end):
+    def parseMove(self, move, team, prev_move_start, prev_move_end):
         '''
         move - string containing standard chess notation for the move
         team - corresponds to one of the two team codes
@@ -201,80 +200,120 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
-        
         # Checks do not affect anything
         move = move.replace(' ','')
         move = move.replace('+','')
+        move = move.replace('-','')
+        move = move.replace('#','')
+        move = move.replace('0','O')
+        move = move.replace('o','O')
         move = move.replace('x','')
-        if len(move) == 2 or len(move) == 4:
-            move = move.lower()
-        if len(move) == 3 and move != "O-O":
-            move = move[0] + move[1:].lower()
-
-        start = [None, None]
         
-        # If not castling or promoting a pawn, the move ends on the last two 
-        # coordinates
-        if move != 'O-O' and move != 'O-O-O' and '=' not in move:
-            move = move.replace("-","")            
-            # Note this coordinate is in range 1 <= end[i] <= 8
-            # and end[0] is a file
-            # and end[1] is a rank
-            end = [int(move[-1]), rankLetterToCol[move[-2]]]
+        #Castling
+        if move == 'OO' or move == 'OOO':
+            # Queen-side castling
+            if len(move) == 5:
+                return ([team,5],[team,3]), False
+            # King-side castling
+            else:
+                return ([team,5],[team,7]), False
+        
+        piece = None
+        start_coord = None
+        end_coord = None
+        promotion_flag = None
+        enpassant_flag = False
+        
+        # For a promotion, save the result and parse as a normal move after that
+        if '=' in move:
+            promotion_flag = pieceStrToVal[move[-1]]
+            move = move[:-2]
+        
+        # Pawn move
+        if len(move) == 2:
+            piece = P
+            start_coord = move[0]
+            end_coord = move.lower()
 
+        elif len(move) == 3:
+            
+            # pawn move
+            if move.islower():
+                piece = P
+                start_coord = move[0] + str(move[2] - team)
+            
+            # piece move
+            else: 
+                piece = pieceStrToVal[move[0].upper()]
+
+            end_coord = move[1:].lower()
+        
+        elif len(move) == 4:
+
+            # pawn move
+            if move[1].isnumeric():
+                piece = P
+                start_coord = move[0:2].lower()
+
+            # piece move
+            else:
+                piece = pieceStrToVal[move[0].upper()]
+                start_coord = move[1]
+            end_coord = move[2:].lower()
+
+        # fully explicit move
+        elif len(move) == 5:
+            piece = pieceStrToVal[move[0].upper()]
+            start_coord = move[1:3].lower()
+            end_coord = move[3:].lower()
+        
+        # We should not use `move` after this point
+
+        start = None
+        end = None
+        if len(start_coord) == 1: 
+            if start_coord in rankLetterToCol.keys():
+                start = [None,rankLetterToCol[start_coord]]
+            else:
+                start = [int(start_coord),None]
+        if len(start_coord) == 2: 
+            start = [int(start_coord[1]), rankLetterToCol[start_coord[0]]]
+        if len(end_coord) == 2:
+            end = [int(end_coord[1]), rankLetterToCol[end_coord[0]]]
+
+        if piece != P and len(start) == 2 and len(end) == 2:
+            return (start,end),False,promotion_flag
+        print("prestart: ", start)
+        print("preend: ", end)
         ##########
         #  PAWN
         ##########
-        if len(move) == 4:
-            start = [int(move[1]), rankLetterToCol[move[0]]]
-            return (start,end),False
-             
-        # If the move consists of two coordinates, it's a pawn
-        if len(move) == 2:
-            p = P
+        if piece == P:
+            if start:
+                start_row = start[0] if start[0] else end[0] - team
+                fresh_pawn_expected = [end[0]-team,end[1]]
+                enpassant_flag = on_board_wraparound(self.board, *end) * team == -fP
+                start = [start_row,rankLetterToCol[start_coord[0]]]
+
+            else:
+                start = [end[0]-team,end[1]]
+                piece_on_board = on_board_wraparound(self.board, *start)
+                if piece_on_board != team*P and piece_on_board != team*fP:
+                    start[0] -= team
             
-            start = [end[0] - team, end[1]]
-
-            #If start is incorrect
-            if on_board_wraparound(self.board, *start) != team*P and on_board_wraparound(self.board, *start) != team*fP:
-                print("adjust")
-                start[0] -= team
-            return (start, end), False
                
-        #capture -- does not include en'passant
-        if move[0] in rankLetterToCol.keys():
-            if '=' in move:
-                if len(move) == 4:
-                    return ([int(move[1]) - team, rankLetterToCol[move[0]]], [int(move[1]), rankLetterToCol[move[0]]]), False
-                else:
-                    return ([int(move[3]) - team, rankLetterToCol[move[0]]], [int(move[3]), rankLetterToCol[move[2]]]), False
-
-            if 'x' in move or move[0] != move[2]:
-                if len(move) == 5:
-                    move = move.replace('x','')
-                print("pawn attack:",move,end)
-                output = ([end[1] - team, rankLetterToCol[move[0]]], end)
-                # En'passant
-                if rankLetterToCol[move[2]] == prev_move_start[1] == prev_move_end[1] and prev_move_end[0] + team == end[0]:
-                   return output, True 
-                return output, False
-        
-        # Do not need to know if a piece is being taken
-        move = move.replace('x','')
-        
-        p = pieceStrToVal[move[0]]
-
         ##########
         #  ROOK
         ##########
 
-        if p == R:
+        elif piece == R:
             starts = self.checkStraights(end, team)
-            if len(move) == 4:
-                if move[1] in rankLetterToCol.keys():
-                    starts = [m for m in starts if m[0] == rankLetterToCol[move[1]]]
-                else:
-                    starts = [m for m in starts if m[1] == int(move[1])]
+            # indicates ambiguous move like Rce4
+            if start:
+                if start[1] == None: #Rce4
+                    starts = [m for m in starts if m[0] == start[0]]
+                else: #R1e4
+                    starts = [m for m in starts if m[1] == start[1]]
             start = self.ambiguous(starts, move)
 
 
@@ -282,7 +321,7 @@ class Game:
         # KNIGHT
         ##########
 
-        elif p == N:
+        elif piece == N:
             starts = []
             for i in range(-2,3,4):
                 for j in range(-1,2,2):
@@ -292,13 +331,13 @@ class Game:
                         starts.append([end[0]+i,end[1]+j])
                     if p2 == team*N:
                         starts.append([end[0]+j,end[1]+i])
-
-            #If additional context is needed to clarify
-            if len(move) == 4:
-                if move[1] in rankLetterToCol.keys():
-                    starts = [m for m in starts if m[1] == rankLetterToCol[move[1]]]
+            
+            # Filter possibilities if more context is given
+            if start:
+                if start[1] == None:
+                    starts = [m for m in starts if m[1] == start[0]]
                 else:
-                    starts = [m for m in starts if m[0] == int(move[1])]
+                    starts = [m for m in starts if m[0] == start[1]]
             start = self.ambiguous(starts, move)
 
 
@@ -306,7 +345,7 @@ class Game:
         # BISHOP
         ##########
 
-        elif p == B:
+        elif piece == B:
             starts = self.checkDiags(end, team)
             start = self.ambiguous(starts, move)
             
@@ -315,7 +354,7 @@ class Game:
         # QUEEN
         ##########
 
-        elif p == Q:
+        elif piece == Q:
             starts = self.checkStraights(end, team, piece=Q)
             starts += self.checkDiags(end, team, piece=Q)
             start = self.ambiguous(starts, move)
@@ -325,7 +364,7 @@ class Game:
         #  KING
         ##########
                 
-        elif p == K: # Piece is equal to "king"
+        elif piece == K: # Piece is equal to "king"
             starts = [] # init starts
             for direction in lrup + diags:
                 crd = [end[0] + direction[0], end[1] + direction[1]] # Relative coordinates (-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1),(1,-1),(1,0),(1,1)
@@ -333,20 +372,12 @@ class Game:
                 if on_board_wraparound(self.board, *crd) == team*K:
                     start = crd
                     break 
-        #Castling
-        elif p == O:
-            # Queen-side castling
-            if len(move) == 5:
-                return ([team,5],[team,3]), False
-            # King-side castling
-            else:
-                return ([team,5],[team,7]), False
-
-        return(start,end), False
-
+        print("start: ", start)
+        print("end: ", end)
+        return(start,end), enpassant_flag, promotion_flag
 
 # Helper functions
-def movePiece(board, start, end, team, enpassant = False):
+def movePiece(board, start, end, team, enpassant = False, promotion = None):
     '''
     Given a start and end coordinates (2-lists) and a team 
     distinction, the board gets updated accordingly.
@@ -357,9 +388,9 @@ def movePiece(board, start, end, team, enpassant = False):
         if board[x,y] == team*fP:
             board[x,y] = team*P
     
-    #Special case of a promotion (assumes to queen)
+    #Special case of a promotion 
     if end[0] == 8 and on_board_wraparound(board, *start) == P or end[0] == 1 and on_board_wraparound(board, *start) == -P:
-        setCoord(board, *end, team*Q)
+        setCoord(board, *end, team*promotion)
     else:
         # In the case of double-moving pawn (special case to allow en'passant on it)
         if on_board_wraparound(board, *start) == team*P and abs(end[0] - start[0]) == 2:

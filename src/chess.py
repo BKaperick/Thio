@@ -494,7 +494,7 @@ def pawn_move(board, row, col, team):
     candidates = {(row+team,col+1), (row+team,col-1)}
     for cand in candidates:
         pieceval = on_board(board, cand[0], cand[1])
-        if pieceval and pieceval* team < 0:
+        if pieceval and pieceval * team < 0:
             # attacking promotion
             if row == backrank[-team] - team:
                 for p_code in pieceStrToVal.values():
