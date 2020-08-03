@@ -46,7 +46,7 @@ if __name__ == "__main__":
         game.runGame()
     elif mode == "test":
         game = TestGame()
-        game.runTests()
+        game.runAllTests()
     elif mode == "hist":
         verbosity = int(argv[2])
         games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)

@@ -23,43 +23,44 @@ class TestGame(Game):
     def printSummary(self):
         print("\n".join(["passed" if p else "failed" for p in self.results]))
         print("{0} / {1} tests passed ({2} failed)".format(self.tests_passed, self.tests_passed + self.tests_failed, self.tests_failed))
-
-    def runTests(self, rerun_failed = True):
-        parse_tests = (
-                ('e2e4', Wh, [2,5], [4,5], False, None, True),
-                ('e4',   Wh, [2,5], [4,5], False, None, True),
-                ('d5',   Bl, [7,4], [5,4], False, None, False),
-                ('d7d5', Bl, [7,4], [5,4], False, None, True),
-                ('e4',   Wh, [2,5], [4,5], False, None, False),
-                ('exd5', Wh, [4,5], [5,4], False, None, False),
-                ('Pc5',  Bl, [7,3], [5,3], False, None, False),
-                ('dxc6', Wh, [5,4], [6,3], True,  None, False)
+    
+    def runAllTests(self, rerun_failed=True):
+        return self.runPawnTests(rerun_failed)
+    def runPawnTests(self, rerun_failed = True):
+        tests = (
+                (self.testParseMove, 'e2e4', Wh, [], [2,5], [4,5], False, None, True),
+                (self.testParseMove, 'e4',   Wh, [], [2,5], [4,5], False, None, True),
+                (self.testParseMove, 'd5',   Bl, [], [7,4], [5,4], False, None, False),
+                (self.testParseMove, 'd7d5', Bl, [], [7,4], [5,4], False, None, True),
+                (self.testParseMove, 'e4',   Wh, [], [2,5], [4,5], False, None, False),
+                (self.testParseMove, 'exd5', Wh, [], [4,5], [5,4], False, None, False),
+                (self.testParseMove, 'Pc5',  Bl, [], [7,3], [5,3], False, None, False),
+                (self.testParseMove, 'dxc6', Wh, [], [5,4], [6,3], True,  None, False),
+                (self.testBoardPiece, Wh*P, 6, 3, False),
+                (self.testBoardPiece, empty, 5, 3, False),
+                (self.testBoardPiece, empty, 5, 4, False),
+                (self.testParseMove, 'c7', Wh, [], [6,3], [7,3], False,  None, False),
+                (self.testParseMove, 'cxb8=N', Wh, [], [7,3], [8,2], False,  None, False),
+                (self.testBoardPiece, Wh*N, 8, 2, False),
                 )
-        for test_num,(move,team,start,end,ep_flag,prom_flag,clean_board) in enumerate(parse_tests):
+        return self.executeTests(tests, rerun_failed)
+
+    def executeTests(self, tests, rerun_failed = True):
+        for test_num,test in enumerate(tests):
+            testFunc = test[0]
+            clean_board = test[-1]
             if clean_board:
                 self.createCleanBoard()
             before_board = self.board.copy()
-            result = self.testParseMove(move, team, [], start, end, ep_flag, prom_flag, test_num)
+            result = testFunc(*test[1:-1], test_num)
             if not result:
+                print(test[1])
+                # re-run test with verbosity set to 1
                 self.verbose = 1
-                print(move)
                 self.board = before_board 
                 print_board(self.board)
-                result = self.testParseMove(move, team, [], start, end, ep_flag, prom_flag, test_num)
+                result = testFunc(*test[1:-1], test_num)
                 print_board(self.board)
-                self.verbose = 0
-            self.results.append(result)
-        board_tests = (
-                (Wh*P, 6, 3),
-                (0,    5, 3),
-                (0,    5, 4)
-                )
-        for test_num,(piece, row, col) in enumerate(board_tests):
-            result = self.testBoardPiece(piece, row, col, test_num)
-            if not result:
-                self.verbose = 1
-                print_board(self.board)
-                result = self.testBoardPiece(piece, row, col, test_num)
                 self.verbose = 0
             self.results.append(result)
 
