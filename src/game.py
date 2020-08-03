@@ -6,7 +6,7 @@ rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
 colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
 
 class Game:
-    def __init__(self, cpTeam, movemaker, savestates = True):
+    def __init__(self, cpTeam, movemaker, verbosity = 0, savestates = True):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -31,6 +31,8 @@ class Game:
         self.savestates = True
         self.states = []
 
+        self.verbose = verbosity
+
     def getNextMove(self,team):
         if team == self._cpTeam:
             move = self.getNextComputerMove(team)
@@ -46,7 +48,7 @@ class Game:
     def getNextComputerMove(self, team):
         return self._movemaker(self.board,self._cpTeam,self.movenum)
     
-    def runGame(self, verbose=0):
+    def runGame(self):
         '''
         INPUT
         savestates -- if is True, the board is deep-copied after each board change.
@@ -60,24 +62,22 @@ class Game:
             history of the game, else None
         '''
         self.states.append(self.board.copy())
-        if verbose >= 0:
+        if self.verbose >= 0:
             print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         while True:
             self.movenum += 1
             
             self.makeMove(Wh)
+            if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
             self.makeMove(Bl)
 
-            if verbose >= 0:
-                #print("\nmoves:", startW,endW,"\n",startB,endB)
-                print_board(self.board,perspective=-self._cpTeam)
+            if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
             
     def createCleanBoard(self):
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
-        self.board[:,1] = np.array([0,P,P,P,P,P,P,P], dtype=np.int8)
-        #self.board[:,-4] = np.array([0,P,fP,0,0,0,0,0], dtype=np.int8)
+        self.board[:,1] = np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
     
@@ -199,7 +199,9 @@ class Game:
         move = move.replace('#','')
         move = move.replace('0','O')
         move = move.replace('o','O')
+        move = move.replace('X','')
         move = move.replace('x','')
+        move = move.replace('P','') # pawn moves never need to be referred to with 'P'
         
         #Castling
         if move == 'OO' or move == 'OOO':
@@ -232,7 +234,7 @@ class Game:
             # pawn move
             if move.islower():
                 piece = P
-                start_coord = move[0] + str(move[2] - team)
+                start_coord = move[0] + str(int(move[2]) - team)
             
             # piece move
             else: 
@@ -275,20 +277,27 @@ class Game:
 
         if piece != P and len(start) == 2 and len(end) == 2:
             return (start,end),False,promotion_flag
-        print("prestart: ", start)
-        print("preend: ", end)
+        
+        if self.verbose:
+            print("pre start: ", start)
+            print("pre end: ", end)
+        
         ##########
         #  PAWN
         ##########
-        if piece == P:
-            if start:
-                start_row = start[0] if start[0] else end[0] - team
-                fresh_pawn_expected = [end[0]-team,end[1]]
-                enpassant_flag = on_board_wraparound(self.board, *end) * team == -fP
-                start = [start_row,rankLetterToCol[start_coord[0]]]
 
+        if piece == P: 
+            start_row = start[0] if start[0] else end[0] - team
+            start = [start_row,rankLetterToCol[start_coord[0]]]
+            # we always have at least start[1] for a pawn move
+
+            # attack
+            if start[1] != end[1]:
+                fresh_pawn_expected = [end[0]-team,end[1]]
+                enpassant_flag = on_board_wraparound(self.board, *fresh_pawn_expected) * team == -fP
+
+            # possible double move
             else:
-                start = [end[0]-team,end[1]]
                 piece_on_board = on_board_wraparound(self.board, *start)
                 if piece_on_board != team*P and piece_on_board != team*fP:
                     start[0] -= team
@@ -364,8 +373,10 @@ class Game:
                 if on_board_wraparound(self.board, *crd) == team*K:
                     start = crd
                     break 
-        print("start: ", start)
-        print("end: ", end)
+        if self.verbose:
+            print("start: ", start)
+            print("end: ", end)
+            print("flags: ", enpassant_flag, promotion_flag)
         return(start,end), enpassant_flag, promotion_flag
 
 # Helper functions
