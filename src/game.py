@@ -206,11 +206,11 @@ class Game:
         #Castling
         if move == 'OO' or move == 'OOO':
             # Queen-side castling
-            if len(move) == 5:
-                return ([team,5],[team,3]), False
+            if len(move) == 3:
+                return ([team,5],[team,3]), False, None
             # King-side castling
             else:
-                return ([team,5],[team,7]), False
+                return ([team,5],[team,7]), False, None
         
         piece = None
         start_coord = None
