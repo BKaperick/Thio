@@ -6,7 +6,7 @@ rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
 colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
 
 class Game:
-    def __init__(self, cpTeam, movemaker):
+    def __init__(self, cpTeam, movemaker, savestates = True):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -28,23 +28,25 @@ class Game:
         self.createCleanBoard()
 
         self.movenum = 0
+        self.savestates = True
+        self.states = []
 
-    def getNextMove(self,before,after,team):
+    def getNextMove(self,team):
         if team == self._cpTeam:
             move = self.getNextComputerMove(team)
         else:
-            move = self.getNextUserMove(before,after,team)
+            move = self.getNextUserMove(team)
         print("move: ", print_coord(move[0][0]),print_coord(move[0][1]))
         return move
 
-    def getNextUserMove(self,before,after,team):
+    def getNextUserMove(self, team):
         move = input("move:")
-        return self.parseMove(move, team, before, after)
+        return self.parseMove(move, team)
 
-    def getNextComputerMove(self,team):
+    def getNextComputerMove(self, team):
         return self._movemaker(self.board,self._cpTeam,self.movenum)
     
-    def runGame(self, savestates=True, verbose=0):
+    def runGame(self, verbose=0):
         '''
         INPUT
         savestates -- if is True, the board is deep-copied after each board change.
@@ -57,33 +59,20 @@ class Game:
         states -- if savestates is True, an array of board states detailing the 
             history of the game, else None
         '''
-        states = [self.board.copy()]
-        startB, endB = '', ''
+        self.states.append(self.board.copy())
         if verbose >= 0:
             print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         while True:
             self.movenum += 1
             
-            (startW,endW) = self.makeMove(startB,endB,Wh)
-            
-            if savestates:
-                states.append(self.board.copy())
+            self.makeMove(Wh)
+            self.makeMove(Bl)
 
-            (startB,endB) = self.makeMove(startW,endW,Bl)
-
-            if savestates:
-                states.append(self.board.copy())
-            
             if verbose >= 0:
                 #print("\nmoves:", startW,endW,"\n",startB,endB)
                 print_board(self.board,perspective=-self._cpTeam)
             
-        
-        if savestates:
-            return states
-            
-
     def createCleanBoard(self):
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
@@ -92,14 +81,17 @@ class Game:
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
     
-    def makeMove(self, prevTurnStart, prevTurnEnd, team):
+    def makeMove(self, team):
         
         # code to extract starting and ending positions.
-        (boardTurnStart, boardTurnEnd), enpassant_flag, promotion_flag = self.getNextMove(prevTurnStart,prevTurnEnd,team)
+        (boardTurnStart, boardTurnEnd), enpassant_flag, promotion_flag = self.getNextMove(team)
         print("en passant?", enpassant_flag)
         print("promotion?", promotion_flag)
         # update board
         movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag, promotion=promotion_flag)
+        if self.savestates:
+            self.states.append(self.board.copy())
+
         return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
@@ -191,7 +183,7 @@ class Game:
         return start
 
 
-    def parseMove(self, move, team, prev_move_start, prev_move_end):
+    def parseMove(self, move, team):
         '''
         move - string containing standard chess notation for the move
         team - corresponds to one of the two team codes
