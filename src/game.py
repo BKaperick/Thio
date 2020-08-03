@@ -406,7 +406,7 @@ def movePiece(board, start, end, team, enpassant = False, promotion = None):
     
     # Remove the pawn that has been en'passanted
     if enpassant:
-        setCoord(board, end[1], end[0] - team, empty)
+        setCoord(board, end[0] - team, end[1], empty)
     
     #Replace starting place with empty
     setCoord(board, *start, empty)
