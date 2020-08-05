@@ -2,11 +2,11 @@ from game import *
 
 
 class TestGame(Game):
-    def __init__(self):
+    def __init__(self, verbosity=0):
         self.tests_passed = 0
         self.tests_failed = 0
         self.results = []
-        self.verbose = 0
+        self.verbose = verbosity
     
     def testTally(self, assertions, test_name):
         try:
@@ -19,15 +19,69 @@ class TestGame(Game):
             self.tests_failed += 1
             return False
 
-
     def printSummary(self):
         # print("\n".join(["passed" if p else "failed" for p in self.results]))
         print("{0} / {1} tests passed ({2} failed)".format(self.tests_passed, self.tests_passed + self.tests_failed, self.tests_failed))
     
     def runAllTests(self, rerun_failed=True):
-        tests = self.pawnTests() + self.castlingTests()
-        return self.executeTests(tests, rerun_failed)
+        parsing_tests = self.pawnTests() + self.castlingTests() + self.knightTests() + self.kingTests()
+        return self.executeTests(parsing_tests, rerun_failed)
     
+    ##############################
+    ###
+    ### PARSING TESTS
+    ###
+    ##############################
+
+
+    
+    ##############################
+    ###
+    ### PARSING TESTS
+    ###
+    ##############################
+
+    def kingTests(self):
+        aroundKing = [[empty,1,4],
+                [empty,2,4],
+                [empty,2,5],
+                [empty,1,6],
+                [empty,2,6],
+                [empty,8,4]]
+        tests = (
+                (self.testParseMove, 'Kd1', Wh, aroundKing, [1,5], [1,4], False, None, True),
+                (self.testParseMove, 'Kd2', Wh, aroundKing, [1,5], [2,4], False, None, True),
+                (self.testParseMove, 'Ke2', Wh, aroundKing, [1,5], [2,5], False, None, True),
+                (self.testParseMove, 'Kf1', Wh, aroundKing, [1,5], [1,6], False, None, True),
+                (self.testParseMove, 'Kf2', Wh, aroundKing, [1,5], [2,6], False, None, True),
+                (self.testBoardPiece, empty, 1, 5, False),
+                (self.testParseMove, 'Kd8', Bl, aroundKing, [8,5], [8,4], False, None, True),
+                (self.testBoardPiece, empty, 8, 5, False))
+        return tests
+    def knightTests(self):
+        fourKnights = [ # [4,5]
+                [Wh*N,3,3],
+                [Wh*N,2,4],
+                [Bl*N,5,3],
+                [Bl*N,6,4]]
+
+        tests = (
+                (self.testParseMove, 'Nc3', Wh, [], [1,2], [3,3], False, None, True),
+                (self.testBoardPiece, empty, 1, 2, False),
+                (self.testBoardPiece, Wh*N, 3, 3, False),
+
+                (self.testParseMove, 'Nce4', Wh, fourKnights, [3,3], [4,5], False, None, True),
+                (self.testParseMove, 'Nc3e4', Wh, fourKnights, [3,3], [4,5], False, None, True),
+                (self.testParseMove, 'Nde4', Wh, fourKnights, [2,4], [4,5], False, None, True),
+                (self.testParseMove, 'N2e4', Wh, fourKnights, [2,4], [4,5], False, None, True),
+                
+                (self.testParseMove, 'Nce4', Bl, fourKnights, [5,3], [4,5], False, None, True),
+                (self.testParseMove, 'Nc5e4', Bl, fourKnights, [5,3], [4,5], False, None, True),
+                (self.testParseMove, 'Nde4', Bl, fourKnights, [6,4], [4,5], False, None, True),
+                (self.testParseMove, 'N6e4', Bl, fourKnights, [6,4], [4,5], False, None, True),
+                )
+        return tests
+
     def castlingTests(self):
         clearNonKingRook = [[empty,1,2],
                 [empty,1,3],
@@ -97,11 +151,11 @@ class TestGame(Game):
             if not result:
                 print(test[1:])
                 # re-run test with verbosity set to 1
-                self.verbose = 1
+                self.verbose += 1
                 self.board = before_board 
                 result = testFunc(*test[1:-1], test_num)
-                print_board(self.board, team)
-                self.verbose = 0
+                print_board(self.board)
+                self.verbose -= 1
             self.results.append(result)
 
         self.printSummary()

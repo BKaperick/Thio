@@ -170,17 +170,12 @@ class Game:
         which contains a list of coordinates of pieces which could make 
         the inputted move.
         '''
-        if len(starts) > 1 and len(move) == 3 and move[0] == 'N':
-            print("[WARNING] this decision doesn't make any sense: ", start[1:])
-            start = starts[1]
-            
         # Simply return the only element from starts if len(starts) == 1, 
         # Or return the first element from starts (sloppy handling).
-        else:
+        if len(starts) > 1:
             print("[WARNING] Throwing away moves! ", starts[1:])
-            start = starts[0]
 
-        return start
+        return starts[0]
 
 
     def parseMove(self, move, team):
@@ -213,8 +208,8 @@ class Game:
                 return ([team,5],[team,7]), False, None
         
         piece = None
-        start_coord = None
-        end_coord = None
+        start_coord = []
+        end_coord = []
         promotion_flag = None
         enpassant_flag = False
         
@@ -239,13 +234,14 @@ class Game:
             # piece move
             else: 
                 piece = pieceStrToVal[move[0].upper()]
+                start_coord = []
 
             end_coord = move[1:].lower()
         
         elif len(move) == 4:
 
             # pawn move
-            if move[1].isnumeric():
+            if move[1].isnumeric() and move[0].islower():
                 piece = P
                 start_coord = move[0:2].lower()
 
@@ -263,22 +259,22 @@ class Game:
         
         # We should not use `move` after this point
 
-        start = None
-        end = None
+        start = [None,None]
+        end = [None,None]
         if len(start_coord) == 1: 
             if start_coord in rankLetterToCol.keys():
-                start = [None,rankLetterToCol[start_coord]]
+                start[1] = rankLetterToCol[start_coord]
             else:
-                start = [int(start_coord),None]
+                start[0] = int(start_coord)
         if len(start_coord) == 2: 
             start = [int(start_coord[1]), rankLetterToCol[start_coord[0]]]
         if len(end_coord) == 2:
             end = [int(end_coord[1]), rankLetterToCol[end_coord[0]]]
 
-        if piece != P and len(start) == 2 and len(end) == 2:
+        if piece != P and all(start) and all(end):
             return (start,end),False,promotion_flag
         
-        if self.verbose:
+        if self.verbose>0:
             print("pre start: ", start)
             print("pre end: ", end)
         
@@ -310,7 +306,7 @@ class Game:
         elif piece == R:
             starts = self.checkStraights(end, team)
             # indicates ambiguous move like Rce4
-            if start:
+            if any(start):
                 if start[1] == None: #Rce4
                     starts = [m for m in starts if m[0] == start[0]]
                 else: #R1e4
@@ -334,11 +330,11 @@ class Game:
                         starts.append([end[0]+j,end[1]+i])
             
             # Filter possibilities if more context is given
-            if start:
+            if any(start):
                 if start[1] == None:
-                    starts = [m for m in starts if m[1] == start[0]]
+                    starts = [m for m in starts if m[0] == start[0]]
                 else:
-                    starts = [m for m in starts if m[0] == start[1]]
+                    starts = [m for m in starts if m[1] == start[1]]
             start = self.ambiguous(starts, move)
 
 

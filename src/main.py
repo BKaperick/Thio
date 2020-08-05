@@ -45,7 +45,8 @@ if __name__ == "__main__":
         game = Game(team, alphabeta_adj_move)
         game.runGame()
     elif mode == "test":
-        game = TestGame()
+        verbosity = int(argv[2]) if len(argv) > 2 else 0
+        game = TestGame(verbosity)
         game.runAllTests()
     elif mode == "hist":
         verbosity = int(argv[2])
