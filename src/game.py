@@ -61,24 +61,28 @@ class Game:
         states -- if savestates is True, an array of board states detailing the 
             history of the game, else None
         '''
-        self.states.append(self.board.copy())
+        self.createCleanBoard()
+
+        #self.states.append(self.board.copy())
         if self.verbose > 0:
             print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         not_finished = True
         while not_finished:
+            self.saveState()
             self.movenum += 1
             
             not_finished = self.makeMove(Wh)
-            self.saveState()
             if not not_finished:
                 break
+            self.saveState()
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
             not_finished = self.makeMove(Bl)
-            self.saveState()
     
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
         print("finished game after",self.movenum,"moves")         
+
+
     def createCleanBoard(self):
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)

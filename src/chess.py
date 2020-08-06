@@ -18,6 +18,17 @@ C = 7
 O = 7
 empty = 0
 
+piece_to_string = {
+        fP: '(f)Pawn',
+        P: 'Pawn',
+        R: 'Rook',
+        N: 'Knight',
+        B: 'Bishop',
+        Q: 'Queen',
+        K: 'King',
+        C: '<Castling>',
+        empty: 'Empty'}
+
 pieceStrToVal = {'F':fP,'P':P,'R':R,'N':N,'B':B,'Q':Q,'K':K,'O':C}
 pieceValToStr = {v:k for k,v in pieceStrToVal.items()}
 
@@ -175,15 +186,20 @@ def is_valid_move(start, end, team, verbose=0):
         end_spaces = {tup if tup[0] != fP else (P,tup[1],tup[2],tup[3],tup[4]) for tup in end_spaces}
         # Set of 3-tuples 
         tmp = moves['moveto'].union(moves['take'])
+        tmp = {(abs(piece), x, y, t[1],t[2]) for t in tmp}
         tmp = {tup if tup[0] != fP else (P,tup[1],tup[2],tup[3],tup[4]) for tup in tmp}
         found_matches = tmp.intersection(end_spaces)
         
         if verbose:
-            print("tmp: ", [move_to_string(*m,0) for m in tmp])
-            print("possible: ",[move_to_string(*m,0) for m in end_spaces])
-            print(move_to_string(p,x,y) + " can move to " + ", ".join([move_to_string(*z,1) for z in found_matches]))
+            pass
+            #print("tmp: ", [move_to_string(*m,0) for m in tmp])
+            #print("possible: ",[move_to_string(*m,0) for m in end_spaces])
+            #print(move_to_string(p,x,y) + " can move to " + ", ".join([move_to_string(*z,1) for z in found_matches]))
             
         if len(found_matches) == 0:
+            print(moves)
+            print(end_spaces)
+            print(tmp)
             return False
 
 
@@ -452,7 +468,7 @@ def enpassant_moves(board, team, verbose=0):
     return moves
 
 
-def move_to_string(piece, row, col,justloc=0):
+def move_to_string(piece,_,row, col,justloc=0):
     if justloc:
         out = ""
     else:

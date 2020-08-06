@@ -26,7 +26,6 @@ def gen_pairs(games, start_count = 0):
         game.runGame()
         states = game.states
         team = 1
-        print("found",len(states),"states")
         for i,state in enumerate(states[:-1]):
             yield state, states[i+1], team, i
 
@@ -58,17 +57,17 @@ if __name__ == "__main__":
         total = 0
         
         for start, end, team, index in gen_pairs(games):
-            print(start)
+            if verbosity:
+                print_board(start,team)
+                print_board(end,team)
             result = is_valid_move(start, end, team, verbose=verbosity)
             if not result:
-                print("failed: ", index)
                 print_board(start)
                 print_board(end)
                 print(team)
                 break
             correct += int(result)
             total += 1
-
         print("finished: ", correct , " / " , total)
         
 

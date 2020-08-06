@@ -7,16 +7,6 @@ import numpy as np
 from game import *
 
 fname = '../data/Adams.pgn'
-piece_to_string = {
-        fP: '(f)Pawn',
-        P: 'Pawn',
-        R: 'Rook',
-        N: 'Knight',
-        B: 'Bishop',
-        Q: 'Queen',
-        K: 'King',
-        C: '<Castling>',
-        empty: 'Empty'}
     
 
 class HistoricalGame(Game): 
@@ -41,7 +31,6 @@ class HistoricalGame(Game):
 
         #Removes move number from each pair of moves
         self._moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves), 2)]
-        print("in class: ", self._moves)
 
         if result:
             self.result = result.split('-')[0]
@@ -135,6 +124,7 @@ def only_correct_games(fname, start_count = 0, max_count = 0, verbose=False):
     occasionally have typos in the game itself, and so failures to parse all
     games in `fname` may be for that reason.  
     '''
+
     # The error check code calls runGame() which can only be called once per
     # game, so they must be regenerated.
     games = parsePGN(fname, start_count = start_count, max_count=max_count, verbose=verbose)
