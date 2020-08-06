@@ -62,18 +62,23 @@ class Game:
             history of the game, else None
         '''
         self.states.append(self.board.copy())
-        if self.verbose >= 0:
+        if self.verbose > 0:
             print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
-        while True:
+        not_finished = True
+        while not_finished:
             self.movenum += 1
             
-            self.makeMove(Wh)
+            not_finished = self.makeMove(Wh)
+            self.saveState()
+            if not not_finished:
+                break
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
-            self.makeMove(Bl)
-
+            not_finished = self.makeMove(Bl)
+            self.saveState()
+    
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
-            
+        print("finished game after",self.movenum,"moves")         
     def createCleanBoard(self):
         self.board = np.zeros((8,8), dtype=np.int8)
         self.board[:,0] = np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
@@ -84,15 +89,20 @@ class Game:
     def makeMove(self, team):
         
         # code to extract starting and ending positions.
-        (boardTurnStart, boardTurnEnd), enpassant_flag, promotion_flag = self.getNextMove(team)
-        print("en passant?", enpassant_flag)
-        print("promotion?", promotion_flag)
+        reponse = self.getNextMove(team)
+        if not reponse:
+            return False
+        (boardTurnStart, boardTurnEnd), enpassant_flag, promotion_flag = reponse
+        if self.verbose > 1:
+            print("en passant?", enpassant_flag)
+            print("promotion?", promotion_flag)
         # update board
         movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag, promotion=promotion_flag)
+        return True
+
+    def saveState(self):
         if self.savestates:
             self.states.append(self.board.copy())
-
-        return boardTurnStart, boardTurnEnd
 
     def checkStraights(self, end, team, piece=R):
         '''
@@ -187,6 +197,7 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
+        if self.verbose > 0: print("[PARSING] ", teams[team], " plays ", move)
         # Checks do not affect anything
         move = move.replace(' ','')
         move = move.replace('+','')
@@ -274,7 +285,7 @@ class Game:
         if piece != P and all(start) and all(end):
             return (start,end),False,promotion_flag
         
-        if self.verbose>0:
+        if self.verbose>1:
             print("pre start: ", start)
             print("pre end: ", end)
         
@@ -369,7 +380,7 @@ class Game:
                 if on_board_wraparound(self.board, *crd) == team*K:
                     start = crd
                     break 
-        if self.verbose:
+        if self.verbose > 1:
             print("start: ", start)
             print("end: ", end)
             print("flags: ", enpassant_flag, promotion_flag)

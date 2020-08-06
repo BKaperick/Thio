@@ -7,6 +7,8 @@ class TestGame(Game):
         self.tests_failed = 0
         self.results = []
         self.verbose = verbosity
+        self.states = []
+        self.savestates = True
     
     def testTally(self, assertions, test_name):
         try:
@@ -184,6 +186,7 @@ class TestGame(Game):
                 enpassant_flag == exp_enpassant,
                 exp_promotion == exp_promotion]
         movePiece(self.board, start,end, team, enpassant=enpassant_flag, promotion=promotion_flag)
+        self.saveState()
         
         return self.testTally(assertions, "parsetest " + str(test_num))
     

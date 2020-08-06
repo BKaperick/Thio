@@ -28,6 +28,33 @@ teams.update({n:'Black' for n in range(-10,0)})
 diags = [(-1,-1), (-1,1), (1,-1), (1,1)]
 lrup = [(1,0), (0,1), (-1,0), (0,-1)]
 
+def diffs(board1, board2):
+    '''
+    INPUT
+    board1 -- a 2d array board state
+    board2 -- a 2d array board state
+
+    The differences between the two boards are calculated.
+    Importantly, fresh pawns converting back to normal pawns are not included
+    in the array of differences
+
+    RETURN
+    final_indices -- an array with two arrays [row indices, col indices]
+        pointing to differences between the two inputted boards
+    '''
+    diff = board1 != board2
+    indices = np.where(diff)
+    final_indices = [[], []]
+    for x,y in zip(*indices):
+        # `fP` is a temporary distinction for a pawn which has just performed 
+        # a two space jump and can be en'passanted, so this difference is just 
+        # a pawn reverting to its correct ID, not a real move.
+        if abs(board1[x,y]) == fP and abs(board2[x,y]) == P and board1[x,y]*board2[x,y] > 0:
+            continue
+        final_indices[0].append(x)
+        final_indices[1].append(y)
+    return final_indices
+
 def is_valid_move(start, end, team, verbose=0):
     '''
     INPUT

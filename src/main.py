@@ -23,8 +23,10 @@ def gen_pairs(games, start_count = 0):
     '''
     for gi, game in enumerate(games):
         print("game number: ", gi + start_count)
-        states = game.runGame(verbose=0)
+        game.runGame()
+        states = game.states
         team = 1
+        print("found",len(states),"states")
         for i,state in enumerate(states[:-1]):
             yield state, states[i+1], team, i
 
@@ -50,14 +52,13 @@ if __name__ == "__main__":
         game.runAllTests()
     elif mode == "hist":
         verbosity = int(argv[2])
-        games = only_correct_games(fname, start_count = 0, max_count=0, verbose=verbosity)
+        games = only_correct_games(fname, start_count = 0, max_count=1, verbose=verbosity)
         
         correct = 0
         total = 0
         
         for start, end, team, index in gen_pairs(games):
-            if verbosity:
-                print("MOVE: ", index)
+            print(start)
             result = is_valid_move(start, end, team, verbose=verbosity)
             if not result:
                 print("failed: ", index)

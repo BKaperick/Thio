@@ -20,7 +20,7 @@ piece_to_string = {
     
 
 class HistoricalGame(Game): 
-    def __init__(self, result, moves):
+    def __init__(self, result, moves, verbosity=0):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -40,7 +40,8 @@ class HistoricalGame(Game):
             moves.append(None)
 
         #Removes move number from each pair of moves
-        self._moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves)-5, 2)]
+        self._moves = [(moves[i].split('.')[1],moves[i+1]) for i in range(0, len(moves), 2)]
+        print("in class: ", self._moves)
 
         if result:
             self.result = result.split('-')[0]
@@ -51,44 +52,24 @@ class HistoricalGame(Game):
         self.createCleanBoard()
 
         self.movenum = 0
+        self.savestates = True
+        self.states = []
+        self.verbose = verbosity
+        self._cpTeam = 1
+
    
-    def getNextMove(self,_,__,team):
-        notation = self._moves[self.movenum]
-        if team == Wh:
-            return self.clarifyMove(notation[0],team,_,__)
-        else:
-            return self.clarifyMove(notation[1],team,_,__)
+    def getNextMove(self,team):
+        notation = self._moves[self.movenum-1]
+        if team == Wh and notation[0]:
+            return self.parseMove(notation[0],team)
+        elif team == Bl and notation[1]:
+            return self.parseMove(notation[1],team)
+        return None
 
 
 
-def diffs(board1, board2):
-    '''
-    INPUT
-    board1 -- a 2d array board state
-    board2 -- a 2d array board state
 
-    The differences between the two boards are calculated.
-    Importantly, fresh pawns converting back to normal pawns are not included
-    in the array of differences
-
-    RETURN
-    final_indices -- an array with two arrays [row indices, col indices]
-        pointing to differences between the two inputted boards
-    '''
-    diff = board1 != board2
-    indices = np.where(diff)
-    final_indices = [[], []]
-    for x,y in zip(*indices):
-        # `fP` is a temporary distinction for a pawn which has just performed 
-        # a two space jump and can be en'passanted, so this difference is just 
-        # a pawn reverting to its correct ID, not a real move.
-        if abs(board1[x,y]) == fP and abs(board2[x,y]) == P and board1[x,y]*board2[x,y] > 0:
-            continue
-        final_indices[0].append(x)
-        final_indices[1].append(y)
-    return final_indices
-
-def parsePGN(fname, start_count = 0, max_count = 0, verbose=False):
+def parsePGN(fname, start_count = 0, max_count = 0, verbose=0):
     '''
     INPUT
     fname -- string name of PGN file
@@ -115,10 +96,10 @@ def parsePGN(fname, start_count = 0, max_count = 0, verbose=False):
             #End of a game
             elif inMoves and line == '\n':
                 moves = moves.split()
-                
+                print(moves)            
                 if game_count >= start_count:
                     #Create game object from moves
-                    games.append(HistoricalGame(moves[-1], moves[:-1]))
+                    games.append(HistoricalGame(moves[-1], moves[:-1], verbose))
                 
                 inMoves = False
                 moves = ''
@@ -167,6 +148,7 @@ def only_correct_games(fname, start_count = 0, max_count = 0, verbose=False):
             correct_game_indices.append(i)
             yield fresh_games[i]
         except IndexError:
+            print("failed on game ", i)
             pass
     
 
