@@ -35,6 +35,7 @@ pieceValToStr = {v:k for k,v in pieceStrToVal.items()}
 backrank = {Wh:1, Bl:8}
 teams = {n:'White' for n in range(9)}
 teams.update({n:'Black' for n in range(-10,0)})
+teamStrToVal = {'W':Wh,'B':Bl}
 
 diags = [(-1,-1), (-1,1), (1,-1), (1,1)]
 lrup = [(1,0), (0,1), (-1,0), (0,-1)]

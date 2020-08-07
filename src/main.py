@@ -43,7 +43,7 @@ if __name__ == "__main__":
             team = Bl
         # Create new human-vs-computer game with the computer as `team`, using `random_move` to make its moves
         #game = Game(team, random_move)
-        game = Game(team, alphabeta_adj_move)
+        game = Game(team, alphabeta_adj_move, verbosity=1)
         game.runGame()
     elif mode == "test":
         verbosity = int(argv[2]) if len(argv) > 2 else 0

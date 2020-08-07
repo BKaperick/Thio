@@ -43,7 +43,11 @@ class Game:
 
     def getNextUserMove(self, team):
         move = input("move:")
-        return self.parseMove(move, team)
+        candidate = self.parseMove(move, team)
+        while candidate[0][0][0] == None or candidate[0][0][1] == None or candidate[0][1][0] == None or candidate[0][1][0] == None:
+            move = input("Didn't understand, try again.\n\nmove:")
+            candidate = self.parseMove(move,team)
+        return candidate
 
     def getNextComputerMove(self, team):
         return self._movemaker(self.board,self._cpTeam,self.movenum)
@@ -486,7 +490,7 @@ def translateMoveToChessNotation(move):
     col = colToRankLetter[move[4]]
     return piece + str(col) + str(row)
 
-def setCoord(board, c1, c2, val):
+def setCoord(board, row, col, val):
     '''
     INPUT is in (row,col) format
     Maps two coordinates on the union of [-8,-1] U [1,8] to the piece at
@@ -495,12 +499,12 @@ def setCoord(board, c1, c2, val):
     to 7, etc.  This functionality is only used when
     handling castling and promotions symmetrically.
     
-    c1==0 and c2==0 are due to checkStraights() or checkDiags() testing a 
+    row==0 and col==0 are due to checkStraights() or checkDiags() testing a 
     position which is out of bounds, so None is returned.
     '''
-    if c1 < 0: c1 += 9
-    if c2 < 0: c2 += 9
-    board[c2-1, c1-1] = val
+    if row < 0: row += 9
+    if col < 0: col += 9
+    board[col-1, row-1] = val
     return board
 
 def print_coord(coord):
@@ -511,3 +515,36 @@ def print_move(move):
     if move == None:
         return ""
     return pieceValToStr[move[0]] + print_coord(move[1:3]) + " " + print_coord(move[3:5])
+
+def iterate_board(board):
+    for _c,col in enumerate(board):
+        for _r,row in enumerate(col):
+            r = _r+1
+            c = _c+1
+            yield on_board(board,r,c),r,c
+
+def board_to_string(board,team):
+    board_str = teams[team][0]
+    for p,x,y in iterate_board(board):
+        if p != empty:
+            piece = abs(p)
+            team = teams[p][0]
+            piece_str = pieceValToStr[piece]
+            board_str += team + piece_str + str(x) + str(y)
+    return board_str
+
+def string_to_board(board_str):
+    turn = teamStrToVal[board_str[0]]
+    board = np.zeros((8,8), dtype=np.int8)
+    #turn = Wh if board_str[0] == 'W' else Bl
+    for i,x in enumerate(board_str[1::4]):
+        index = 4*i + 2
+        team = teamStrToVal[x]
+        piece = pieceStrToVal[board_str[index]]
+        row = int(board_str[index+1])
+        col = int(board_str[index+2])
+        setCoord(board, row, col, team*piece)
+    return board, turn
+
+
+

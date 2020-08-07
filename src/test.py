@@ -27,14 +27,23 @@ class TestGame(Game):
     
     def runAllTests(self, rerun_failed=True):
         parsing_tests = self.pawnTests() + self.castlingTests() + self.knightTests() + self.kingTests()
-        return self.executeTests(parsing_tests, rerun_failed)
+        string_tests = self.boardStringTests()
+        print(string_tests)
+        tests = parsing_tests + string_tests
+        
+        return self.executeTests(tests, rerun_failed)
     
     ##############################
     ###
-    ### PARSING TESTS
+    ### MEMORY TESTS
     ###
     ##############################
-
+    
+    def boardStringTests(self):
+        tests = (
+                (self.testBoardString, Wh, True),
+                )
+        return tests
 
     
     ##############################
@@ -168,6 +177,17 @@ class TestGame(Game):
         board_piece = on_board_wraparound(self.board, row, col)
         assertions = [piece == board_piece]
         return self.testTally(assertions, "boardtest " + str(test_num))
+    
+    def testBoardString(self, team, test_num):
+        board_str = board_to_string(self.board, team)
+        new_board,new_team = string_to_board(board_str)
+        if self.verbose:
+            print_board(self.board, team)
+            print(board_str)
+            print("RECONSTRUCTED BOARD:")
+            print_board(new_board, team)
+        assertions = [(self.board == new_board).all(), team == new_team]
+        return self.testTally(assertions, "stringtest " + str(test_num))
 
     
     def testParseMove(self, move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion, test_num):

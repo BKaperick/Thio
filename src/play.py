@@ -85,12 +85,6 @@ def real_possible_moves(board,team,depth):
                 print("CAN'T PLAY ",print_move(move), " SINCE IT VIOLATES CHECK")
     return real_moves
 
-def iterate_board(board):
-    for _c,col in enumerate(board):
-        for _r,row in enumerate(col):
-            r = _r+1
-            c = _c+1
-            yield on_board(board,r,c),r,c
 
 def score_board(board):
     total = 0
