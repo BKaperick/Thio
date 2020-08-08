@@ -6,7 +6,7 @@ rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
 colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
 
 class Game:
-    def __init__(self, cpTeam, movemaker, verbosity = 0, savestates = True):
+    def __init__(self, cpTeam, movemaker, verbosity = 0, savestates = True, load_file = None, save_file = 'saved.txt'):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -24,11 +24,27 @@ class Game:
         self._cpTeam = cpTeam
         self._movemaker = movemaker
 
-        #Initializes board to chess starting position
-        self.createCleanBoard()
+        self.base_init(verbosity, savestates, load_file, save_file)
 
+    def base_init(self, verbosity = 0, savestates = True, load_file = None, save_file = None):
+        '''
+        Should really be a parent class __init__ method, but this works for now.
+        '''
+        self.result = ''
+
+        #Initializes board to chess starting position
+        if load_file:
+            self.turn = self.loadState(load_file)
+        else:
+            self.createCleanBoard()
+            self.turn = Wh
+        
+        if save_file:
+            self.save_file = open(save_file, 'a+')
+        else:
+            self.save_file = None
         self.movenum = 0
-        self.savestates = True
+        self.savestates = savestates
         self.states = []
 
         self.verbose = verbosity
@@ -72,19 +88,20 @@ class Game:
             print_board(self.board,perspective=-self._cpTeam)
         # m is a 2-tuple of form (white's move, black's move) in standard chess notation.
         not_finished = True
+
         while not_finished:
             self.saveState()
             self.movenum += 1
-            
-            not_finished = self.makeMove(Wh)
+            print("{0} plays (cp = {1})".format(self.turn, self._cpTeam))
+            not_finished = self.makeMove(self.turn)
             if not not_finished:
                 break
             self.saveState()
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
-            not_finished = self.makeMove(Bl)
+            not_finished = self.makeMove(self.turn)
     
             if self.verbose > 0:print_board(self.board,perspective=-self._cpTeam)
-        print("finished game after",self.movenum,"moves")         
+        if self.verbose > 0:print("finished game after",self.movenum,"moves")         
 
 
     def createCleanBoard(self):
@@ -94,8 +111,8 @@ class Game:
         self.board[:,-2] = Bl*np.array([P,P,P,P,P,P,P,P], dtype=np.int8)
         self.board[:,-1] = Bl*np.array([R,N,B,Q,K,B,N,R], dtype=np.int8)
     
-    def makeMove(self, team):
-        
+    def makeMove(self, team=None):
+        if not team: team = self.turn
         # code to extract starting and ending positions.
         reponse = self.getNextMove(team)
         if not reponse:
@@ -106,11 +123,14 @@ class Game:
             print("promotion?", promotion_flag)
         # update board
         movePiece(self.board, boardTurnStart, boardTurnEnd, team, enpassant=enpassant_flag, promotion=promotion_flag)
+        self.turn = -self.turn
         return True
 
     def saveState(self):
         if self.savestates:
             self.states.append(self.board.copy())
+        if self.save_file:
+            self.writeState()
 
     def checkStraights(self, end, team, piece=R):
         '''
@@ -394,6 +414,25 @@ class Game:
             print("flags: ", enpassant_flag, promotion_flag)
         return(start,end), enpassant_flag, promotion_flag
 
+    def writeState(self):
+        board_str = board_to_string(self.board, self.turn)
+        self.save_file.write(board_str + "\n")
+            
+    def loadState(self, filename):
+        if filename == self.save_file.name:
+            self.save_file.close()
+        with open(filename, 'r') as f:
+            board = list(f.readlines())[-1]
+        if filename == self.save_file.name:
+            self.save_file = open(filename,'a+')
+        
+        if self.verbose > 1:
+            print('LOADING:\n',board)
+        self.board,self.turn = string_to_board(board)
+    
+    def printBoard(self):
+        return print_board(self.board, self.turn)
+
 # Helper functions
 def movePiece(board, start, end, team, enpassant = False, promotion = None):
     '''
@@ -524,6 +563,9 @@ def iterate_board(board):
             yield on_board(board,r,c),r,c
 
 def board_to_string(board,team):
+    '''
+    `team` indicates who is next to play
+    '''
     board_str = teams[team][0]
     for p,x,y in iterate_board(board):
         if p != empty:
@@ -534,10 +576,15 @@ def board_to_string(board,team):
     return board_str
 
 def string_to_board(board_str):
+    '''
+    `turn` indicates who is next to play
+    '''
     turn = teamStrToVal[board_str[0]]
     board = np.zeros((8,8), dtype=np.int8)
     #turn = Wh if board_str[0] == 'W' else Bl
     for i,x in enumerate(board_str[1::4]):
+        if x == '\n':
+            continue
         index = 4*i + 2
         team = teamStrToVal[x]
         piece = pieceStrToVal[board_str[index]]

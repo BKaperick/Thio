@@ -6,9 +6,16 @@ class TestGame(Game):
         self.tests_passed = 0
         self.tests_failed = 0
         self.results = []
-        self.verbose = verbosity
-        self.states = []
-        self.savestates = True
+        self.base_init(verbosity, True, None, 'test_saved.txt')
+        self.next_move = None
+    
+    def getNextMove(self,team):
+        if team == self._cpTeam:
+            move = self.getNextComputerMove(team)
+        else:
+            move = self.parseMove(self.next_move, team)
+
+        return move
     
     def testTally(self, assertions, test_name):
         try:
@@ -28,7 +35,8 @@ class TestGame(Game):
     def runAllTests(self, rerun_failed=True):
         parsing_tests = self.pawnTests() + self.castlingTests() + self.knightTests() + self.kingTests()
         string_tests = self.boardStringTests()
-        print(string_tests)
+        print("{0} parsing tests".format(len(parsing_tests)))
+        print("{0} memory tests".format(len(string_tests)))
         tests = parsing_tests + string_tests
         
         return self.executeTests(tests, rerun_failed)
@@ -41,7 +49,10 @@ class TestGame(Game):
     
     def boardStringTests(self):
         tests = (
-                (self.testBoardString, Wh, True),
+                (self.testMakeMove, 'e2e4', [2,5], [4,5], False, None, True),
+                (self.testBoardString, True),
+                (self.testMakeMove, 'e7e5', [7,5], [5,5], False, None, False),
+                (self.testBoardString, False),
                 )
         return tests
 
@@ -178,20 +189,44 @@ class TestGame(Game):
         assertions = [piece == board_piece]
         return self.testTally(assertions, "boardtest " + str(test_num))
     
-    def testBoardString(self, team, test_num):
-        board_str = board_to_string(self.board, team)
-        new_board,new_team = string_to_board(board_str)
+    def testBoardString(self, test_num):
+        '''
+        Save current `self.board` to file, then reload board from file
+        '''
+        old_board = self.board.copy()
+        old_team = self.turn
+        old_board_str = board_to_string(self.board, self.turn)
+        self.saveState()
+        self.loadState(self.save_file.name)
+        new_board_str = board_to_string(self.board, self.turn)
+        new_board,new_team = string_to_board(new_board_str)
         if self.verbose:
-            print_board(self.board, team)
-            print(board_str)
-            print("RECONSTRUCTED BOARD:")
-            print_board(new_board, team)
-        assertions = [(self.board == new_board).all(), team == new_team]
+            print("ORIGINAL:")
+            print_board(old_board, old_team)
+            print("RECONSTRUCTED:")
+            print_board(new_board, new_team)
+        assertions = [(old_board == new_board).all(),
+                old_team == new_team,
+                (self.board == old_board).all(),
+                self.turn == old_team
+                ]
         return self.testTally(assertions, "stringtest " + str(test_num))
 
+    def testMakeMove(self, move, exp_start, exp_end, exp_enpassant, exp_promotion, test_num):
+        '''
+        Make move for current player as if they were a human
+        '''
+        self._cpTeam = -self.turn
+        old_turn = self.turn
+        self.next_move = move
+        self.makeMove()
+        assertions = [
+                old_turn == -self.turn,
+                ]
+        parse_assertions,_,__,___,____ = self._parseMoveAssertions(move, self.turn, [], exp_start, exp_end, exp_enpassant, exp_promotion)
+        return self.testTally(assertions, "movetest " + str(test_num))
     
-    def testParseMove(self, move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion, test_num):
-        if setup: self.addPiecesToBoard(setup)
+    def _parseMoveAssertions(self, move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion):
         if self.verbose > 0:
             print_board(self.board, team)
         (start,end),enpassant_flag,promotion_flag = self.parseMove(move, team)
@@ -205,9 +240,12 @@ class TestGame(Game):
                 end[1] == exp_end[1],
                 enpassant_flag == exp_enpassant,
                 exp_promotion == exp_promotion]
+        return assertions, start, end, enpassant_flag, promotion_flag
+    
+    def testParseMove(self, move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion, test_num):
+        if setup: self.addPiecesToBoard(setup)
+        assertions, start, end, enpassant_flag, promotion_flag = self._parseMoveAssertions(move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion)
         movePiece(self.board, start,end, team, enpassant=enpassant_flag, promotion=promotion_flag)
-        self.saveState()
-        
         return self.testTally(assertions, "parsetest " + str(test_num))
     
     def addPiecesToBoard(self,positions):

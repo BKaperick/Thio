@@ -22,7 +22,6 @@ def gen_pairs(games, start_count = 0):
     state -- 
     '''
     for gi, game in enumerate(games):
-        print("game number: ", gi + start_count)
         game.runGame()
         states = game.states
         team = 1
@@ -37,11 +36,11 @@ if __name__ == "__main__":
         pass
     mode = argv[1]    
     if mode == "play":
-        if len(argv) > 3 and argv[3] == "Black":
+        if len(argv) > 2 and argv[2] == "Black":
            team = Wh
         else:
             team = Bl
-        # Create new human-vs-computer game with the computer as `team`, using `random_move` to make its moves
+        # Create new human-vs-computer game with the computer as `team`, using `alphabeta_adj_move` to make its moves
         #game = Game(team, random_move)
         game = Game(team, alphabeta_adj_move, verbosity=1)
         game.runGame()

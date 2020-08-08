@@ -10,7 +10,7 @@ fname = '../data/Adams.pgn'
     
 
 class HistoricalGame(Game): 
-    def __init__(self, result, moves, verbosity=0):
+    def __init__(self, result, moves, verbosity=0, save_file = None):
         '''
         INPUT
         result -- a string '1' or '0' or '1/2' indicating the game result
@@ -25,6 +25,8 @@ class HistoricalGame(Game):
         indexed from 0-7
         '''
         
+        self.base_init(verbosity, True, None, save_file)
+        
         #Adds null move if white was the last to play
         if len(moves) % 2 == 1:
             moves.append(None)
@@ -37,13 +39,6 @@ class HistoricalGame(Game):
         else:
             self.result = ''
 
-        #Initializes board to chess starting position
-        self.createCleanBoard()
-
-        self.movenum = 0
-        self.savestates = True
-        self.states = []
-        self.verbose = verbosity
         self._cpTeam = 1
 
    
@@ -85,7 +80,7 @@ def parsePGN(fname, start_count = 0, max_count = 0, verbose=0):
             #End of a game
             elif inMoves and line == '\n':
                 moves = moves.split()
-                print(moves)            
+                if verbose: print(moves)            
                 if game_count >= start_count:
                     #Create game object from moves
                     games.append(HistoricalGame(moves[-1], moves[:-1], verbose))
