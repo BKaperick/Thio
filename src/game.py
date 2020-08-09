@@ -5,7 +5,31 @@ from chess import *
 rankLetterToCol = {chr(i):i-96 for i in range(97,105)}
 colToRankLetter = {v:k for k,v in rankLetterToCol.items()}
 
-class Game:
+class BaseGame:
+    verbose = 0
+    def __init__(self, verbosity = 0, savestates = True, load_file = None, save_file = None):
+        '''
+        Initializations that are mostly common to all game variants
+        '''
+        self.result = ''
+        if save_file:
+            self.save_file = open(save_file, 'a+')
+        else:
+            self.save_file = None        
+        #Initializes board to chess starting position
+        if load_file:
+             self.loadState(load_file)
+        else:
+            self.createCleanBoard()
+            self.turn = Wh
+        
+        self.movenum = 0
+        self.savestates = savestates
+        self.states = []
+
+        self.verbose = verbosity
+
+class Game(BaseGame):
     def __init__(self, cpTeam, movemaker, verbosity = 0, savestates = True, load_file = None, save_file = 'saved.txt'):
         '''
         INPUT
@@ -20,34 +44,11 @@ class Game:
         self.board[i,j] is the ith rank (row) and jth file (column), each
         indexed from 0-7
         '''
+        BaseGame.__init__(self, verbosity, savestates, load_file, save_file)
         self.result = ''
         self._cpTeam = cpTeam
         self._movemaker = movemaker
-
-        self.base_init(verbosity, savestates, load_file, save_file)
-
-    def base_init(self, verbosity = 0, savestates = True, load_file = None, save_file = None):
-        '''
-        Should really be a parent class __init__ method, but this works for now.
-        '''
-        self.result = ''
-
-        #Initializes board to chess starting position
-        if load_file:
-            self.turn = self.loadState(load_file)
-        else:
-            self.createCleanBoard()
-            self.turn = Wh
         
-        if save_file:
-            self.save_file = open(save_file, 'a+')
-        else:
-            self.save_file = None
-        self.movenum = 0
-        self.savestates = savestates
-        self.states = []
-
-        self.verbose = verbosity
 
     def getNextMove(self,team):
         if team == self._cpTeam:
@@ -81,7 +82,6 @@ class Game:
         states -- if savestates is True, an array of board states detailing the 
             history of the game, else None
         '''
-        self.createCleanBoard()
 
         #self.states.append(self.board.copy())
         if self.verbose > 0:
@@ -92,7 +92,8 @@ class Game:
         while not_finished:
             self.saveState()
             self.movenum += 1
-            print("{0} plays (cp = {1})".format(self.turn, self._cpTeam))
+            if self.verbose:
+                print("{0} to play (cp = {1})".format(teams[self.turn], teams[self._cpTeam]))
             not_finished = self.makeMove(self.turn)
             if not not_finished:
                 break
@@ -129,7 +130,7 @@ class Game:
     def saveState(self):
         if self.savestates:
             self.states.append(self.board.copy())
-        if self.save_file:
+        if self.savestates and self.save_file:
             self.writeState()
 
     def checkStraights(self, end, team, piece=R):
@@ -225,6 +226,9 @@ class Game:
 
         Returns a 2-tuple of the moving pieces
         '''
+        if len(move) == 1:
+            self.writeState()
+            raise Exception("\nGame Finished\n\n")
         if self.verbose > 0: print("[PARSING] ", teams[team], " plays ", move)
         # Checks do not affect anything
         move = move.replace(' ','')
@@ -415,20 +419,24 @@ class Game:
         return(start,end), enpassant_flag, promotion_flag
 
     def writeState(self):
+        if self.verbose > 1:
+            print("writing board ({0} to play)".format(teams[self.turn]))
+            self.printBoard()
         board_str = board_to_string(self.board, self.turn)
         self.save_file.write(board_str + "\n")
             
     def loadState(self, filename):
-        if filename == self.save_file.name:
+        if self.save_file and filename == self.save_file.name:
             self.save_file.close()
         with open(filename, 'r') as f:
             board = list(f.readlines())[-1]
-        if filename == self.save_file.name:
+        if self.save_file and filename == self.save_file.name:
             self.save_file = open(filename,'a+')
         
+        self.board,self.turn = string_to_board(board)
         if self.verbose > 1:
             print('LOADING:\n',board)
-        self.board,self.turn = string_to_board(board)
+            print_board(self.board, self.turn)
     
     def printBoard(self):
         return print_board(self.board, self.turn)
@@ -593,5 +601,9 @@ def string_to_board(board_str):
         setCoord(board, row, col, team*piece)
     return board, turn
 
-
+def play_game(cp_team, cp_movemaker, load_file = None, save_file = None):
+    # Create new human-vs-computer game with the computer as `team`, using `alphabeta_adj_move` to make its moves
+    #game = Game(team, random_move)
+    game = Game(cp_team, cp_movemaker, verbosity=1, load_file = load_file, save_file = save_file)
+    game.runGame()
 

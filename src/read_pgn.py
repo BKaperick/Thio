@@ -25,7 +25,7 @@ class HistoricalGame(Game):
         indexed from 0-7
         '''
         
-        self.base_init(verbosity, True, None, save_file)
+        BaseGame.__init__(self, verbosity, True, None, save_file)
         
         #Adds null move if white was the last to play
         if len(moves) % 2 == 1:
@@ -145,7 +145,44 @@ def only_correct_games(fname, start_count = 0, max_count = 0, verbose=False):
 #    with open(fname) as f:
 #        with open(new_fname, "w") as new_f:
             
+def gen_pairs(games, start_count = 0):
+    '''
+    INPUT
+    games -- a list of game states
 
+    YIELD
+    state -- 
+    '''
+    for gi, game in enumerate(games):
+        game.runGame()
+        states = game.states
+        team = 1
+        for i,state in enumerate(states[:-1]):
+            yield state, states[i+1], team, i
+
+            # Alternate team between moves
+            team *= -1
+
+def run_history(fname, verbosity):
+    games = only_correct_games(fname, start_count = 0, max_count=1, verbose=verbosity)
+    
+    correct = 0
+    total = 0
+    
+    for start, end, team, index in gen_pairs(games):
+        if verbosity:
+            print_board(start,team)
+            print_board(end,team)
+        result = is_valid_move(start, end, team, verbose=verbosity)
+        if not result:
+            print_board(start)
+            print_board(end)
+            print(team)
+            break
+        correct += int(result)
+        total += 1
+    if verbosity:print("finished: ", correct , " / " , total)
+    return correct / total
 
 if __name__ == "__main__":
 

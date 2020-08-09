@@ -1,12 +1,12 @@
 from game import *
 
-
 class TestGame(Game):
     def __init__(self, verbosity=0):
+        BaseGame.__init__(self, verbosity, True, None, 'test_saved.txt')
+        
         self.tests_passed = 0
         self.tests_failed = 0
         self.results = []
-        self.base_init(verbosity, True, None, 'test_saved.txt')
         self.next_move = None
     
     def getNextMove(self,team):
@@ -35,12 +35,27 @@ class TestGame(Game):
     def runAllTests(self, rerun_failed=True):
         parsing_tests = self.pawnTests() + self.castlingTests() + self.knightTests() + self.kingTests()
         string_tests = self.boardStringTests()
+        cli_tests = self.commandLineTests()
         print("{0} parsing tests".format(len(parsing_tests)))
         print("{0} memory tests".format(len(string_tests)))
-        tests = parsing_tests + string_tests
+        print("{0} cli tests".format(len(cli_tests)))
+        tests = parsing_tests + string_tests + cli_tests
         
         return self.executeTests(tests, rerun_failed)
     
+    ##############################
+    ###
+    ### UI/GAMEPLAY TESTS
+    ###
+    ##############################
+
+    def commandLineTests(self):
+        tests = (
+                (self.testCommandLine, 'main.py hist 0', False),
+                #(self.testCommandLine, 'main.py hist 1', False),
+                )
+        return tests
+
     ##############################
     ###
     ### MEMORY TESTS
@@ -247,9 +262,23 @@ class TestGame(Game):
         assertions, start, end, enpassant_flag, promotion_flag = self._parseMoveAssertions(move, team, setup, exp_start, exp_end, exp_enpassant, exp_promotion)
         movePiece(self.board, start,end, team, enpassant=enpassant_flag, promotion=promotion_flag)
         return self.testTally(assertions, "parsetest " + str(test_num))
+
+    def testCommandLine(self, string, test_num):
+        argv = string.split()
+        from main import parse_input, execute_command
+        mode, options = parse_input(argv)
+        result = execute_command(mode, options)
+        assertions = [result == 1]
+        return self.testTally(assertions, "clitest " + str(test_num))
+
+
     
     def addPiecesToBoard(self,positions):
         for piece,r,c in positions:
             setCoord(self.board,r,c,piece) 
 
+def run_tests(verbosity):
+    game = TestGame(verbosity)
+    result = game.runAllTests()
+    return result
 
