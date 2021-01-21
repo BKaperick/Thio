@@ -10,7 +10,7 @@ Currently supported options to get started:
 ### Playing
 In addition to the retrograde analysis, Thio is a fully-capable chess-playing program.  It uses a rudimentary alpha-beta pruned minimax implementation, with a naive analysis of the game state.  Soon, we'll add a small database to store some opening lines to make his openings more natural.
 
-Most variations of standard chess notation will suffice as input, e.g. 'e4' is interpreted as 'Make the only possible pawn move which ends on e3'.  For any ambiguities, as is standard, specify a command such as 'Nce4' to mean 'Move the knight on the c file to e4'.
+Most variations of standard chess notation will suffice as input, e.g. 'e4' is interpreted as 'Make the only possible pawn move which ends on e4'.  For any ambiguities, as is standard, specify a command such as 'Nce4' to mean 'Move the knight on the c file to e4'.
 
 An input of one character, such as 'x' or 'q' will save (if a save_file is specified) and exit the game.  To load an existing game, specify a `load_file`.  By default, `save_file` is set to `load_file` and the game state after each turn is appended to the file.  See `src/game.py` for the human-friendly file format for saving and loading.
 ```
